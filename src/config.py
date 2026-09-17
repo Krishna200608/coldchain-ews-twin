@@ -65,3 +65,17 @@ TRAIN_FRACTION: float = 0.7
 # model's own seed is distinct from the injection seed conceptually.
 # Arbitrary documented default (D7).
 IF_RANDOM_STATE: int = 42
+
+# ══ Milestone 4 constants ══════════════════════════════════════════════════════
+
+# LSTM_WINDOW_LENGTH: count of consecutive real readings per input window for LSTM.
+# Count-based windowing (D9 per D1). Arbitrary documented default.
+LSTM_WINDOW_LENGTH: int = 30
+
+# LSTM_WINDOW_STRIDE: step size (count of readings) between consecutive window starts.
+# Subsampling/stride heuristic (D9). Arbitrary documented default.
+LSTM_WINDOW_STRIDE: int = 5
+
+# LSTM_VAL_FRACTION: proportion of the train period carved from its tail for validation.
+# Chronological train/val split (D11). Arbitrary documented default.
+LSTM_VAL_FRACTION: float = 0.1

@@ -61,6 +61,7 @@ from sklearn.metrics import (
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from config import SEARCH_HORIZON_MINUTES
+from split_utils import compute_cutoff_ts, split_series
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -317,21 +318,11 @@ def main() -> None:
     # For point-wise metrics we need TEST-SPLIT rows, not just test-injection rows.
     # We derive cutoff from saved scored DFs by reading the cutoff indirectly:
     # use the same formula as isolation_forest_model.py on the actual data.
-    all_ts   = pd.concat([df_out["ts"], df_in["ts"]])
-    from config import TRAIN_FRACTION
-    date_min = all_ts.min()
-    date_max = all_ts.max()
-    cutoff_ts = date_min + TRAIN_FRACTION * (date_max - date_min)
+    cutoff_ts = compute_cutoff_ts(df_out, df_in)
     logger.info("Re-derived cutoff_ts for evaluation: %s", cutoff_ts)
 
-    df_out_train = df_out[df_out["ts"] < cutoff_ts]
-    df_out_test  = df_out[df_out["ts"] >= cutoff_ts]
-    df_in_train   = df_in[df_in["ts"]  < cutoff_ts]
-    df_in_test   = df_in[df_in["ts"]  >= cutoff_ts]
-    logger.info(
-        "Split rows: Out (train=%d, test=%d) | In (train=%d, test=%d)",
-        len(df_out_train), len(df_out_test), len(df_in_train), len(df_in_test),
-    )
+    df_out_train, df_out_test = split_series(df_out, cutoff_ts, "Out")
+    df_in_train,  df_in_test  = split_series(df_in,  cutoff_ts, "In")
 
     # ── Train/test distribution diagnostic (Addendum) ─────────────────────────
     compute_distribution_diagnostic(df_out_train, df_out_test, "Out")

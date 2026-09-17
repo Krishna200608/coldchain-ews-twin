@@ -3,6 +3,47 @@
 All significant design/data decisions for this project are recorded here in
 reverse-chronological order. Each entry states *what* was decided and *why*.
 
+## 2026-09-17 — D12: LSTM-Autoencoder architecture and training protocol (Milestone 4a)
+
+**Decision:** The sequential reconstruction architecture is defined in Keras/TensorFlow as:
+`Encoder LSTM(32 units)` → bottleneck (last hidden state) → `RepeatVector(LSTM_WINDOW_LENGTH = 30)` → `Decoder LSTM(32 units, return_sequences=True)` → `TimeDistributed(Dense(2))` (reconstructing normalized `temp_injected` and `log_gap_seconds`). Training is configured with the Adam optimizer, MSE loss, `batch_size = 256`, up to 50 epochs, and early stopping on validation loss (`patience = 5`, restoring best weights). Models are trained independently per series (`lstm_out.h5`, `lstm_in.h5`).
+
+**Rationale:** An LSTM autoencoder captures sequential dependencies and temporal autocorrelation across time that classical models (like Isolation Forest) cannot model. Learning to reconstruct normal multi-step thermal patterns allows the model to detect anomalies via reconstruction error spikes, providing sensitivity to subtle sequential disruptions.
+
+**Limitation:** The architecture and hyperparameters (32 hidden units, MSE loss, batch size 256) are defined on standard theoretical heuristics and remain **completely unvalidated** until the student executes the authored notebook on a Google Colab T4 GPU session.
+
+---
+
+## 2026-09-17 — D11: Chronological validation split from train tail (Milestone 4a)
+
+**Decision:** A validation set is carved chronologically from the tail of the historical training split: `LSTM_VAL_FRACTION = 0.1` (named constant in `src/config.py`). `train_train` consists of the earliest 90% of train-period rows by time, while `val` consists of the latest 10% of train-period rows. Test-period rows (`ts >= cutoff_ts`) remain strictly untouched and separate in this milestone. Sliding windows are constructed strictly within `train_train` and `val` respectively, with zero boundary crossing.
+
+**Rationale:** Standard random validation splitting in time series causes severe lookahead data leakage. Carving validation chronologically from the end of the training horizon provides early stopping on realistic forward-in-time forecasting, matching operational deployment.
+
+**Limitation:** Carving 10% of train rows from the tail slightly reduces the volume of primary training windows (`train_train`: 11,494 windows for Out, 2,978 for In) and introduces local seasonal variance between `train_train` and `val`.
+
+---
+
+## 2026-09-17 — D10: Bivariate feature set and train-only normalization (Milestone 4a)
+
+**Decision:** The LSTM input vector per timestep is bivariate: `[temp_injected, log1p(gap_seconds)]`. Normalization parameters (mean and standard deviation) are computed exclusively on the full historical training split (`train_train + val`), saved to `data/processed/lstm_norm_stats_{out,in}.json`, and applied to z-score `train_train` and `val` windows. Test telemetry is strictly excluded from normalization statistics.
+
+**Rationale:** Real telemetry in this dataset exhibits strong sampling irregularity (CoV = 46.23). Applying a monotonic `log1p` transform compresses extreme outage intervals while preserving temporal gaps as an explicit feature. Restricting normalization statistics to the training partition prevents test-set distribution leakage into feature scaling.
+
+**Limitation:** Only temperature and sampling gap are modeled. Cross-series interactions (`in_out_diff`) and external covariates (ambient weather) are not included.
+
+---
+
+## 2026-09-17 — D9: Count-based sliding windows for sequential modeling (Milestone 4a)
+
+**Decision:** Windows are constructed over a fixed count of consecutive real observations per D1: `LSTM_WINDOW_LENGTH = 30` readings with `LSTM_WINDOW_STRIDE = 5` readings (named constants in `src/config.py`). Windows are extracted independently per series (Out and In, per D2). No time-grid resampling or synthetic interpolation is performed.
+
+**Rationale:** Resampling irregular time series introduces artificial interpolated temperatures, violating D1. Count-based windows respect observed sensor arrivals. A stride of 5 balances sequence redundancy against computational efficiency and sample diversity.
+
+**Limitation:** Because sampling intervals vary, a 30-reading window covers varying physical elapsed times (from minutes during rapid logging to hours across outage periods).
+
+---
+
 ## 2026-09-17 — D8: Reusing baseline irreversibility timestamps for lead-time benchmarking (Milestone 3)
 
 **Decision:** `irreversibility_timestamp` is directly reused from `data/processed/injection_evaluation_baseline.csv` (Milestone 2 output) for all 30 injections — it is **never recomputed**. Isolation Forest triggers its alarm at `alarm_timestamp_IF` (the first reading within the bounded window `[onset_ts, injection_end_ts + SEARCH_HORIZON_MINUTES]` where `if_anomaly = True`). The early-warning lead time is defined as `lead_time_IF = irreversibility_timestamp - alarm_timestamp_IF` and compared side-by-side with `lead_time_baseline`.

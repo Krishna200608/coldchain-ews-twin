@@ -96,18 +96,38 @@ jupyter notebook notebooks/01_eda.ipynb
 
 | # | Milestone | Status |
 |---|-----------|--------|
-| 1 | Repo Scaffolding, Data Acquisition & EDA | ✅ In progress |
-| 2 | SimPy Digital Twin skeleton | ⬜ Planned |
-| 3 | Isolation Forest baseline | ⬜ Planned |
-| 4 | LSTM-Autoencoder | ⬜ Planned |
-| 5 | EWS integration & alerting | ⬜ Planned |
+| 1 | Repo Scaffolding, Data Acquisition & EDA | ✅ Completed |
+| 2 | Preprocessing, Injected Anomaly Protocol & Baseline Alarm | ✅ Completed |
+| 3 | Isolation Forest Baseline Anomaly Detector | ✅ Completed |
+| 4a| LSTM-Autoencoder Data Prep & Colab Notebook Authoring | ✅ Completed |
+| 4b| Colab T4 Training & LSTM-Autoencoder Evaluation | ⏳ Awaiting Colab Run |
+| 5 | SimPy Digital Twin & Integrated EWS | ⬜ Planned |
 
 ---
 
-## Notes
+## Milestone 4a/4b Colab Workflow
 
-- **No modeling code** is present in this milestone. Anomaly detection
-  (Isolation Forest, LSTM-Autoencoder) and the SimPy digital twin are
-  implemented in later milestones.
-- `data/raw/` and `data/processed/` are gitignored to keep the raw CSV
-  out of version control.
+Because training the LSTM-Autoencoder requires GPU acceleration (Google Colab T4 GPU), model training is partitioned into an authoring step (Milestone 4a) and an execution/evaluation step (Milestone 4b).
+
+### 1. Files to Upload to Google Colab
+Run `python src/lstm_prep.py` locally to generate the window arrays in `data/processed/`.
+Upload these 4 `.npz` files to your Colab session under `data/processed/`:
+- `data/processed/lstm_windows_out_train.npz`
+- `data/processed/lstm_windows_out_val.npz`
+- `data/processed/lstm_windows_in_train.npz`
+- `data/processed/lstm_windows_in_val.npz`
+
+### 2. Executing Training in Colab
+Open `colab/lstm_train.ipynb` in Google Colab:
+1. Ensure the runtime type is set to **T4 GPU** (`Runtime > Change runtime type > T4 GPU`).
+2. Run all cells (`Runtime > Run all`).
+3. Training will train separate Out and In models with early stopping and record loss curves and GPU hardware metadata.
+
+### 3. Files to Download from Colab to Local Repository
+Once training completes, download the following 4 files from Colab and place them in their respective local repository paths:
+- `models/lstm_out.h5` → `coldchain-ews-twin/models/lstm_out.h5`
+- `models/lstm_in.h5` → `coldchain-ews-twin/models/lstm_in.h5`
+- `data/processed/lstm_training_log_out.json` → `coldchain-ews-twin/data/processed/lstm_training_log_out.json`
+- `data/processed/lstm_training_log_in.json` → `coldchain-ews-twin/data/processed/lstm_training_log_in.json`
+
+> **IMPORTANT**: Milestone 4b (test-set window extraction, reconstruction error scoring, PR curves, and EWS lead-time evaluation) **cannot proceed until this manual Colab GPU run is complete** and the trained weights are downloaded locally.
