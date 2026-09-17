@@ -144,6 +144,30 @@ def compute_pr_curve(df_test: pd.DataFrame, series_name: str) -> pd.DataFrame:
     })
 
 
+def compute_distribution_diagnostic(
+    df_train: pd.DataFrame,
+    df_test: pd.DataFrame,
+    series_name: str,
+) -> None:
+    """
+    Diagnostic: report mean/std of temp_injected and gap_seconds separately
+    for train rows vs test rows (printed side by side).
+    """
+    logger.info("=== Distribution Diagnostic (Train vs Test): Series '%s' ===", series_name)
+    logger.info("  Rows: Train=%d, Test=%d", len(df_train), len(df_test))
+    for col in ["temp_injected", "gap_seconds"]:
+        tr_mean = float(df_train[col].mean())
+        tr_std  = float(df_train[col].std())
+        te_mean = float(df_test[col].mean())
+        te_std  = float(df_test[col].std())
+        delta_mean = te_mean - tr_mean
+        delta_std  = te_std - tr_std
+        logger.info(
+            "  %-15s | Train: mean=%8.3f, std=%8.3f | Test: mean=%8.3f, std=%8.3f | Delta: mean=%+8.3f, std=%+8.3f",
+            col, tr_mean, tr_std, te_mean, te_std, delta_mean, delta_std,
+        )
+
+
 # ══ Per-injection IF alarm timestamp and lead time ════════════════════════════
 
 def find_if_alarm_timestamp(
@@ -300,12 +324,18 @@ def main() -> None:
     cutoff_ts = date_min + TRAIN_FRACTION * (date_max - date_min)
     logger.info("Re-derived cutoff_ts for evaluation: %s", cutoff_ts)
 
-    df_out_test = df_out[df_out["ts"] >= cutoff_ts]
-    df_in_test  = df_in[df_in["ts"]  >= cutoff_ts]
+    df_out_train = df_out[df_out["ts"] < cutoff_ts]
+    df_out_test  = df_out[df_out["ts"] >= cutoff_ts]
+    df_in_train   = df_in[df_in["ts"]  < cutoff_ts]
+    df_in_test   = df_in[df_in["ts"]  >= cutoff_ts]
     logger.info(
-        "Test-split rows: Out=%d  In=%d",
-        len(df_out_test), len(df_in_test),
+        "Split rows: Out (train=%d, test=%d) | In (train=%d, test=%d)",
+        len(df_out_train), len(df_out_test), len(df_in_train), len(df_in_test),
     )
+
+    # ── Train/test distribution diagnostic (Addendum) ─────────────────────────
+    compute_distribution_diagnostic(df_out_train, df_out_test, "Out")
+    compute_distribution_diagnostic(df_in_train,  df_in_test,  "In")
 
     metrics_out = compute_pointwise_metrics(df_out_test, "Out")
     metrics_in  = compute_pointwise_metrics(df_in_test,  "In")

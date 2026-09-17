@@ -21,6 +21,11 @@ reverse-chronological order. Each entry states *what* was decided and *why*.
 
 **Limitation:** `contamination='auto'` flags ~20.4% of Out rows and ~13.4% of In rows as anomalies, whereas synthetic anomalies comprise <0.5% of test data. Consequently, the discrete operating point exhibits high recall (80.0% Out, 91.3% In) but very low precision (<2%) and high false positive rates (45.6% Out, 27.0% In). This highlights the fundamental limitation of untuned unsupervised Isolation Forests on raw tabular features without task-specific threshold calibration.
 
+**Distributional drift diagnostic (Addendum):** An explicit diagnostic comparing train rows (`ts < cutoff_ts`) vs test rows (`ts >= cutoff_ts`) reveals that the high FPR on the test set is also partly driven by significant **temporal and seasonal distributional drift**, not solely the untuned contamination parameter:
+- **Series Out:** Mean temperature in the test period is **+3.50 °C higher** than in the training period (39.18 °C test vs 35.68 °C train) with narrower variance (std 3.36 °C test vs 5.95 °C train). Concurrently, average inter-reading sampling intervals more than doubled (mean 266.1 s test vs 124.3 s train).
+- **Series In:** Mean temperature shifted **-1.66 °C lower** (29.17 °C test vs 30.83 °C train) and inter-reading intervals doubled (mean 944.3 s test vs 479.1 s train).
+Because the Isolation Forest learned density contours exclusively on the earlier training period, the substantial upward temperature shift and doubled sampling gaps in the test period caused many unperturbed test readings to fall into low-density regions of the training feature space, contributing directly as an additional factor to the elevated false positive rate.
+
 ---
 
 ## 2026-09-17 — D6: Chronological train/test split (Milestone 3)
