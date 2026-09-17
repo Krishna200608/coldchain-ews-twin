@@ -27,6 +27,9 @@ env/
 kaggle.json
 .kaggle/
 
+# ── Scratch / throwaway diagnostics ───────────────────────────────────────────
+scratch/
+
 # ── OS & IDE ───────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
