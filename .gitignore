@@ -1,6 +1,7 @@
 # ── Raw & processed data (never commit datasets) ──────────────────────────────
 data/raw/
 data/processed/
+models/
 
 # ── Python artefacts ───────────────────────────────────────────────────────────
 __pycache__/

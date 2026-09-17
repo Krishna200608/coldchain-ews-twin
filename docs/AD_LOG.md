@@ -3,6 +3,48 @@
 All significant design/data decisions for this project are recorded here in
 reverse-chronological order. Each entry states *what* was decided and *why*.
 
+## 2026-09-17 — D8: Reusing baseline irreversibility timestamps for lead-time benchmarking (Milestone 3)
+
+**Decision:** `irreversibility_timestamp` is directly reused from `data/processed/injection_evaluation_baseline.csv` (Milestone 2 output) for all 30 injections — it is **never recomputed**. Isolation Forest triggers its alarm at `alarm_timestamp_IF` (the first reading within the bounded window `[onset_ts, injection_end_ts + SEARCH_HORIZON_MINUTES]` where `if_anomaly = True`). The early-warning lead time is defined as `lead_time_IF = irreversibility_timestamp - alarm_timestamp_IF` and compared side-by-side with `lead_time_baseline`.
+
+**Rationale:** The irreversibility timestamp represents the simulated failure / damage milestone (sustained 10-minute threshold exceedance). By keeping this timestamp invariant across all models, differences in lead time purely measure the detectors' relative early-warning responsiveness rather than artifactual shifts in the failure criterion.
+
+**Limitation:** For injections where the irreversibility criterion was never met under M2's bounded search horizon (such as flatline anomalies or sub-threshold excursions), both baseline and IF lead times are undefined (`NaN`).
+
+---
+
+## 2026-09-17 — D7: Contamination parameter 'auto' and PR curve evaluation (Milestone 3)
+
+**Decision:** The discrete decision threshold for Isolation Forest is set to `contamination='auto'` (scikit-learn's default, untuned heuristic). The true injected-row fraction is **strictly not passed** as the contamination parameter. In addition to discrete point-wise metrics (precision, recall, F1, FPR, confusion counts: TP/FP/TN/FN), a complete continuous precision-recall curve and average precision (AUC-PR) are computed on the negated continuous decision function (`-if_score`).
+
+**Rationale:** In an operational cold-chain deployment, future anomaly rates are unknown a priori. Setting `contamination` to the ground-truth injected fraction would leak test labels into model configuration. Using `contamination='auto'` evaluates an honest, untuned unsupervised detector. Generating the continuous PR curve and reporting AUC-PR exposes the detector's complete ranking quality across the entire threshold operating spectrum.
+
+**Limitation:** `contamination='auto'` flags ~20.4% of Out rows and ~13.4% of In rows as anomalies, whereas synthetic anomalies comprise <0.5% of test data. Consequently, the discrete operating point exhibits high recall (80.0% Out, 91.3% In) but very low precision (<2%) and high false positive rates (45.6% Out, 27.0% In). This highlights the fundamental limitation of untuned unsupervised Isolation Forests on raw tabular features without task-specific threshold calibration.
+
+---
+
+## 2026-09-17 — D6: Chronological train/test split (Milestone 3)
+
+**Decision:** A strict chronological train/test split is applied across both series using `cutoff_ts = date_min + TRAIN_FRACTION * (date_max - date_min)` with `TRAIN_FRACTION = 0.7` (named constant in `src/config.py`). The exact same cutoff timestamp (`2018-10-29 11:10:48`) is applied to both Out and In series. Isolation Forest models are fit exclusively on train-split rows (`ts < cutoff_ts`). Injections are categorized into three mutually exclusive subsets:
+- **train-side**: injection `end_ts < cutoff_ts` (24 injections)
+- **test-side**: injection `start_ts >= cutoff_ts` (6 injections)
+- **straddling**: start before and end on/after `cutoff_ts` (0 injections)
+Only test-side injections are evaluated for EWS lead times; train-side and straddling injections are explicitly logged in `injection_train_test_status.csv` and `if_evaluation.csv` with their status, never silently omitted.
+
+**Rationale:** Random shuffling or k-fold cross-validation creates severe temporal data leakage in time-series anomaly detection. Training on historical telemetry and testing on unseen future telemetry mirrors actual operational deployment. Requiring the entire injection window to fall strictly after `cutoff_ts` prevents partial-overlap contamination during test evaluation.
+
+**Limitation:** The strict chronological partition restricts test-side lead-time evaluation to 6 injections (1 Out step, 1 Out drift, 2 Out flatlines, 1 In step, 1 In drift). While statistically constrained in sample size, this ensures rigorous, zero-leakage evaluation.
+
+---
+
+## 2026-09-17 — D5: Recomputing rolling features from temp_injected (Milestone 3)
+
+**Decision:** For the Isolation Forest feature set, `rolling_mean` and `rolling_std` are **recomputed dynamically from `temp_injected`** (`ROLLING_WINDOW = 10` consecutive observations). The stale pre-injection columns `rolling_mean` and `rolling_std` in `out_labeled.csv` and `in_labeled.csv` (which were derived from clean `temp` during preprocessing) are strictly NOT reused. `gap_seconds` is retained as-is (timestamp-only). `in_out_diff` is out of scope for Milestone 3's feature set.
+
+**Rationale:** In a real-time digital twin or streaming EWS, features are derived from the observed sensor signal, which includes disturbances. Computing rolling features from `temp_injected` allows the detector to observe rolling variance spikes and mean shifts caused by disruptions. Reusing pre-injection rolling features would leak unperturbed clean history into the anomaly window, artificially muting anomaly scores. `gap_seconds` is invariant to temperature values and requires no recomputation.
+
+**Limitation:** `in_out_diff` requires cross-series nearest-neighbor recomputation across both perturbed series (`temp_injected`), which is deferred to avoid cross-series recompute complexity in Milestone 3. This is noted as a feature limitation, not a gap to silently fill.
+
 ---
 
 ## 2026-09-17 — D4: Baseline alarm and irreversibility definitions (Milestone 2)

@@ -37,6 +37,8 @@ import sys
 import numpy as np
 import pandas as pd
 
+from config import ROLLING_WINDOW, MAX_MATCH_MINUTES
+
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -44,19 +46,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-
-# ══ Named constants ════════════════════════════════════════════════════════════
-# All values below are DESIGN PARAMETERS (not computed from data).
-# They are named constants so they can be adjusted in one place.
-
-# ROLLING_WINDOW: count of consecutive real readings for rolling mean/std.
-# Value = 10 is an arbitrary documented default (D1: count, not time span).
-ROLLING_WINDOW: int = 10
-
-# MAX_MATCH_MINUTES: maximum allowed time gap (minutes) for in_out_diff matching.
-# Readings whose nearest cross-series counterpart exceeds this cap receive NaN.
-# Value = 15 is an arbitrary documented default; not derived from data.
-MAX_MATCH_MINUTES: int = 15
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]

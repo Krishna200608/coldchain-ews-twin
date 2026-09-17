@@ -67,27 +67,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ══ Named constants ════════════════════════════════════════════════════════════
-
-# K_SIGMA: number of standard deviations above the mean for the alarm threshold.
-# Value = 2 is a conventional heuristic (Chebyshev / 2-sigma rule); not tuned.
-# This is an ARBITRARY DOCUMENTED DEFAULT, not a cold-chain regulatory limit.
-K_SIGMA: float = 2.0
-
-# D_IRREV_MINUTES: sustained exceedance duration for "irreversibility".
-# Value = 10 minutes is a documented default, NOT derived from any real
-# spoilage-kinetics source — no such source exists for this proxy dataset.
-# See D4 in docs/AD_LOG.md.
-D_IRREV_MINUTES: float = 10.0
-
-# SEARCH_HORIZON_MINUTES: how far past the injection window end to search for
-# alarm and irreversibility events. The search window is:
-#   [onset_ts, injection_end_ts + SEARCH_HORIZON_MINUTES]
-# Value = 60 minutes is an ARBITRARY DOCUMENTED DEFAULT — sized to give
-# D_IRREV_MINUTES (10 min) room to accumulate after a short-lived injection ends,
-# without reaching into unrelated future real data hours or days later.
-# Not derived from cold-chain data. See D4 (fix note) in docs/AD_LOG.md.
-SEARCH_HORIZON_MINUTES: float = 60.0
+from config import K_SIGMA, D_IRREV_MINUTES, SEARCH_HORIZON_MINUTES
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]

@@ -41,6 +41,8 @@ import pathlib
 import numpy as np
 import pandas as pd
 
+from config import RANDOM_SEED
+
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -49,11 +51,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ══ Named constants — ALL arbitrary documented defaults ════════════════════════
-
-# RANDOM_SEED: arbitrary choice for reproducibility.
-# Not tuned; changing this will produce a different (but equally valid) injection set.
-RANDOM_SEED: int = 42
+# ══ Named constants — all non-RANDOM_SEED values remain local ════════════════════
 
 # Injection counts per series.
 # 5 × 3 types × 2 series = 30 total injections.
