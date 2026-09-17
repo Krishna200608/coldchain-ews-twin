@@ -105,29 +105,28 @@ jupyter notebook notebooks/01_eda.ipynb
 
 ---
 
-## Milestone 4a/4b Colab Workflow
+## Milestone 4a/4b Colab Workflow (Automated via GitHub PAT)
 
 Because training the LSTM-Autoencoder requires GPU acceleration (Google Colab T4 GPU), model training is partitioned into an authoring step (Milestone 4a) and an execution/evaluation step (Milestone 4b).
 
-### 1. Files to Upload to Google Colab
-Run `python src/lstm_prep.py` locally to generate the window arrays in `data/processed/`.
-Upload these 4 `.npz` files to your Colab session under `data/processed/`:
-- `data/processed/lstm_windows_out_train.npz`
-- `data/processed/lstm_windows_out_val.npz`
-- `data/processed/lstm_windows_in_train.npz`
-- `data/processed/lstm_windows_in_val.npz`
+### 1. Colab Secrets Setup (One-Time)
+1. Open Google Colab and open `colab/lstm_train.ipynb`.
+2. On the left sidebar, click the **Secrets** icon (🔑).
+3. Add a new secret named `GITHUB_TOKEN` (or `GH_TOKEN`), paste your GitHub Personal Access Token (PAT with `repo` / contents write permissions), and toggle on **Notebook access**.
+4. Set the runtime to **T4 GPU** (`Runtime > Change runtime type > T4 GPU`).
 
-### 2. Executing Training in Colab
-Open `colab/lstm_train.ipynb` in Google Colab:
-1. Ensure the runtime type is set to **T4 GPU** (`Runtime > Change runtime type > T4 GPU`).
-2. Run all cells (`Runtime > Run all`).
-3. Training will train separate Out and In models with early stopping and record loss curves and GPU hardware metadata.
+### 2. Execution & Automated Push in Colab
+1. Run all cells in `colab/lstm_train.ipynb`.
+2. The notebook will automatically:
+   - Authenticate and clone `https://github.com/Krishna200608/coldchain-ews-twin` directly into the Colab environment using your PAT.
+   - Prompt you to upload the 4 preprocessed `.npz` window files (`lstm_windows_{out,in}_{train,val}.npz` generated locally by `src/lstm_prep.py`) if not already present.
+   - Train the D12 LSTM-Autoencoder models for Series Out and Series In on the T4 GPU with early stopping.
+   - Automatically commit and push `models/lstm_out.h5`, `models/lstm_in.h5`, `data/processed/lstm_training_log_out.json`, and `data/processed/lstm_training_log_in.json` directly back to the GitHub repository's `main` branch!
 
-### 3. Files to Download from Colab to Local Repository
-Once training completes, download the following 4 files from Colab and place them in their respective local repository paths:
-- `models/lstm_out.h5` → `coldchain-ews-twin/models/lstm_out.h5`
-- `models/lstm_in.h5` → `coldchain-ews-twin/models/lstm_in.h5`
-- `data/processed/lstm_training_log_out.json` → `coldchain-ews-twin/data/processed/lstm_training_log_out.json`
-- `data/processed/lstm_training_log_in.json` → `coldchain-ews-twin/data/processed/lstm_training_log_in.json`
-
-> **IMPORTANT**: Milestone 4b (test-set window extraction, reconstruction error scoring, PR curves, and EWS lead-time evaluation) **cannot proceed until this manual Colab GPU run is complete** and the trained weights are downloaded locally.
+### 3. Sync to Local Repository
+Once the Colab run finishes and pushes the artifacts, run in your local repository:
+```bash
+git pull origin main
+```
+to pull the trained models and training logs locally.
+Then proceed to Milestone 4b (evaluating test-side reconstruction errors and early-warning lead times).
