@@ -1,0 +1,14 @@
+{
+  "series": "In",
+  "architecture": "LSTM(32)-RepeatVector(30)-LSTM(32)-Dense(2)",
+  "n_train_windows": 2978,
+  "n_val_windows": 326,
+  "batch_size": 256,
+  "max_epochs": 50,
+  "epochs_trained": 46,
+  "final_train_loss": 0.2591835856437683,
+  "final_val_loss": 0.31973564624786377,
+  "best_val_loss": 0.3184654712677002,
+  "training_wall_clock_sec": 14.53,
+  "gpu_device": "Tesla T4"
+}
