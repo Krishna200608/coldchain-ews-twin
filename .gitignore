@@ -1,7 +1,13 @@
-# ── Raw & processed data (never commit datasets) ──────────────────────────────
+# ── Raw data (never commit raw Kaggle download) ───────────────────────────────
 data/raw/
-data/processed/
-models/
+
+# ── Large processed CSV datasets (re-generable via pipeline) ──────────────────
+data/processed/*.csv
+
+# ── Models (allow trained H5 weights) ─────────────────────────────────────────
+models/*.joblib
+!models/*.h5
+
 
 # ── Python artefacts ───────────────────────────────────────────────────────────
 __pycache__/

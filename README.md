@@ -119,7 +119,7 @@ Because training the LSTM-Autoencoder requires GPU acceleration (Google Colab T4
 1. Run all cells in `colab/lstm_train.ipynb`.
 2. The notebook will automatically:
    - Authenticate and clone `https://github.com/Krishna200608/coldchain-ews-twin` directly into the Colab environment using your PAT.
-   - Prompt you to upload the 4 preprocessed `.npz` window files (`lstm_windows_{out,in}_{train,val}.npz` generated locally by `src/lstm_prep.py`) if not already present.
+   - Automatically load the 4 preprocessed window files (`lstm_windows_{out,in}_{train,val}.npz`) directly from `data/processed/` in the cloned repository (zero manual upload required).
    - Train the D12 LSTM-Autoencoder models for Series Out and Series In on the T4 GPU with early stopping.
    - Automatically commit and push `models/lstm_out.h5`, `models/lstm_in.h5`, `data/processed/lstm_training_log_out.json`, and `data/processed/lstm_training_log_in.json` directly back to the GitHub repository's `main` branch!
 

@@ -1,0 +1,12 @@
+{
+  "series": "Out",
+  "n_train_rows_total": 63887,
+  "n_train_train_rows": 57498,
+  "n_val_rows": 6389,
+  "n_test_rows": 13372,
+  "cutoff_ts": "2018-10-29 11:10:47.999999",
+  "temp_injected_mean": 35.68003853096587,
+  "temp_injected_std": 5.950910598500125,
+  "log_gap_seconds_mean": 0.9894990680764548,
+  "log_gap_seconds_std": 1.9985174353346589
+}
