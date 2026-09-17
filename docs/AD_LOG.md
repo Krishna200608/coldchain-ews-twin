@@ -23,8 +23,32 @@ spoilage kinetics** and is explicitly not presented as a regulatory limit.
 **Limitation:** The baseline alarm is deliberately naive (single-reading, no
 context). It will produce false positives if the real temperature happens to be
 near the threshold, and will miss flatline anomalies whose frozen value is below
-threshold (2 such null cases observed in Milestone 2 evaluation). The
-irreversibility construct is a proxy label, not a validated food-safety criterion.
+threshold. The irreversibility construct is a proxy label, not a validated
+food-safety criterion.
+
+**⚠ Fix note (2026-09-17 — supersedes the original unbounded implementation):**
+The original implementation used `post_onset = df_lbl.iloc[start_idx:]`, which
+searched to the **end of the entire series**. This caused `baseline_alarm_timestamp`
+and `irreversibility_timestamp` to latch onto unrelated real temperature excursions
+occurring hours or days after the injected window ended, producing inflated
+mean lead times (~3,709 min step, ~2,094 min drift) that did not reflect the
+injected event's actual detectability. This was a bug, not a design choice.
+
+**Fix applied:** Search is now bounded to
+`[onset_ts, injection_end_ts + SEARCH_HORIZON_MINUTES]`.
+Any alarm or irreversibility not found within this window is null.
+
+- `SEARCH_HORIZON_MINUTES = 60` — **ARBITRARY DOCUMENTED DEFAULT**; sized to let
+  a 10-min sustained exceedance criterion resolve shortly after a short-lived
+  injection ends, without reaching into unrelated future real data.
+  Not derived from cold-chain data.
+
+**Updated results (bounded):** null alarm=14/30, null irrev=21/30. The increased
+null count is the honest result under an honest search scope — not a failure to
+suppress. It correctly surfaces that a naive threshold alarm (with bounded horizon)
+fails on most flatlines and many drift/step injections whose base temperature is
+below threshold, and on injections where the D_IRREV_MINUTES sustained criterion
+cannot be met within the 60-min post-window.
 
 ---
 

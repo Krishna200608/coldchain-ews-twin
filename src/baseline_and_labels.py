@@ -12,7 +12,7 @@ See D4 in docs/AD_LOG.md and docs/data_profile.md.
 
 DESIGN DECISIONS IMPLEMENTED
 -----------------------------
-D4:
+D4 (as of 2026-09-17 fix):
   - Baseline threshold = per-series mean + K_SIGMA * std, computed ONLY
     from the clean (non-injected) feature files.
   - Baseline alarm = FIRST single reading where temp_injected > threshold.
@@ -20,6 +20,10 @@ D4:
   - Irreversibility = first onset point where temp_injected remains
     continuously > threshold for >= D_IRREV_MINUTES.
   - Baseline lead time = irreversibility_timestamp − baseline_alarm_timestamp.
+  - Search scope is bounded to [onset_ts, injection_end_ts + SEARCH_HORIZON_MINUTES].
+    Any alarm or irreversibility not found within this window is null. This prevents
+    unrelated future real temperature excursions (days later) from being attributed
+    to the injected event — a bug in the original unbounded version.
   - All are labelled "proxy constructs"; no spoilage-kinetics source exists
     for this dataset.
 
@@ -75,6 +79,15 @@ K_SIGMA: float = 2.0
 # spoilage-kinetics source — no such source exists for this proxy dataset.
 # See D4 in docs/AD_LOG.md.
 D_IRREV_MINUTES: float = 10.0
+
+# SEARCH_HORIZON_MINUTES: how far past the injection window end to search for
+# alarm and irreversibility events. The search window is:
+#   [onset_ts, injection_end_ts + SEARCH_HORIZON_MINUTES]
+# Value = 60 minutes is an ARBITRARY DOCUMENTED DEFAULT — sized to give
+# D_IRREV_MINUTES (10 min) room to accumulate after a short-lived injection ends,
+# without reaching into unrelated future real data hours or days later.
+# Not derived from cold-chain data. See D4 (fix note) in docs/AD_LOG.md.
+SEARCH_HORIZON_MINUTES: float = 60.0
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -236,23 +249,39 @@ def main() -> None:
     logger.info("Injection log: %d rows", len(inj_log))
 
     # ── 4. Evaluate each injection ────────────────────────────────────────────
+    logger.info(
+        "Search window: injection window + %.0f-min horizon (SEARCH_HORIZON_MINUTES, arbitrary default)",
+        SEARCH_HORIZON_MINUTES,
+    )
     eval_rows = []
     null_alarm_count  = 0
     null_irrev_count  = 0
 
     for _, row in inj_log.iterrows():
-        series   = row["series"]
-        df_lbl   = labeled[series]
+        series    = row["series"]
+        df_lbl    = labeled[series]
         threshold = thresholds[series]
         start_idx = int(row["start_idx"])
+        end_idx   = int(row["end_idx"])
 
-        # Post-onset = all rows from start_idx to end of series
-        post_onset = df_lbl.iloc[start_idx:].copy()
+        # Derive onset and injection-end timestamps from the labeled DataFrame.
+        # end_idx is the last row INDEX of the injection window (inclusive).
+        onset_ts      = df_lbl.iloc[start_idx]["ts"]
+        inj_end_ts    = df_lbl.iloc[end_idx]["ts"]
+        horizon_end   = inj_end_ts + pd.Timedelta(minutes=SEARCH_HORIZON_MINUTES)
 
-        # (a) Baseline alarm: first single crossing
+        # BOUNDED search window: [onset_ts, inj_end_ts + SEARCH_HORIZON_MINUTES]
+        # This prevents unrelated real temperature excursions (hours/days later)
+        # from being attributed to the injected event.
+        # Any alarm or irreversibility not found within this window is null.
+        post_onset = df_lbl[
+            (df_lbl["ts"] >= onset_ts) & (df_lbl["ts"] <= horizon_end)
+        ].copy()
+
+        # (a) Baseline alarm: first single crossing within the bounded window
         alarm_ts = find_baseline_alarm(post_onset, threshold)
 
-        # (b) Irreversibility: first sustained crossing >= D_IRREV_MINUTES
+        # (b) Irreversibility: first sustained crossing >= D_IRREV_MINUTES (bounded)
         irrev_ts = find_irreversibility(post_onset, threshold, D_IRREV_MINUTES)
 
         # (c) Lead time = irrev_ts - alarm_ts (both in same direction)
@@ -267,14 +296,15 @@ def main() -> None:
             null_alarm_count += 1
             logger.warning(
                 "  [%s] %s: BASELINE ALARM = null "
-                "(threshold never crossed — expected for low-value flatlines)",
+                "(threshold not crossed within bounded window [%s, %s])",
                 row["injection_id"], row["type"],
+                onset_ts, horizon_end,
             )
         if irrev_ts is None:
             null_irrev_count += 1
             logger.warning(
                 "  [%s] %s: IRREVERSIBILITY = null "
-                "(sustained %.0f-min exceedance never reached)",
+                "(sustained %.0f-min exceedance not reached within bounded window)",
                 row["injection_id"], row["type"], D_IRREV_MINUTES,
             )
 
@@ -302,8 +332,8 @@ def main() -> None:
     # ── 5. Summary ─────────────────────────────────────────────────────────────
     logger.info("=== Evaluation summary ===")
     logger.info("  Total injections evaluated    : %d", len(eval_df))
-    logger.info("  Baseline alarm = null          : %d (threshold never crossed)", null_alarm_count)
-    logger.info("  Irreversibility = null         : %d (sustained exceedance not reached)", null_irrev_count)
+    logger.info("  Baseline alarm = null          : %d (not crossed within bounded window)", null_alarm_count)
+    logger.info("  Irreversibility = null         : %d (sustained exceedance not reached within bounded window)", null_irrev_count)
 
     by_type = eval_df.groupby("type").agg(
         n=("injection_id", "count"),
@@ -320,8 +350,9 @@ def main() -> None:
             f"  {sname}: mean={s['mean']:.4f}  std={s['std']:.4f}  "
             f"threshold=mean+{K_SIGMA:.0f}*std={s['threshold']:.4f}"
         )
-    print(f"\nD_IRREV_MINUTES = {D_IRREV_MINUTES} (arbitrary documented default)")
-    print(f"K_SIGMA = {K_SIGMA} (arbitrary documented default)")
+    print(f"\nD_IRREV_MINUTES       = {D_IRREV_MINUTES} (arbitrary documented default)")
+    print(f"K_SIGMA               = {K_SIGMA} (arbitrary documented default)")
+    print(f"SEARCH_HORIZON_MINUTES= {SEARCH_HORIZON_MINUTES} (arbitrary documented default)")
     print(f"\nNull alarm count       : {null_alarm_count}")
     print(f"Null irreversibility   : {null_irrev_count}")
     print("\nEvaluation table:")
