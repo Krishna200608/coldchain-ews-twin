@@ -1,0 +1,17 @@
+# ── Core data stack ────────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+scipy>=1.12.0
+
+# ── Kaggle dataset download ────────────────────────────────────────────────────
+kagglehub>=0.2.0          # preferred; falls back to kaggle-api if unavailable
+kaggle>=1.6.0             # kaggle CLI / API (fallback)
+
+# ── Notebook environment ───────────────────────────────────────────────────────
+jupyter>=1.0.0
+ipykernel>=6.29.0
+
+# ── Code quality ───────────────────────────────────────────────────────────────
+ruff>=0.4.0
