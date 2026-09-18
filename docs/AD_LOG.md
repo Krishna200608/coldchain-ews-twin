@@ -3,6 +3,36 @@
 All significant design/data decisions for this project are recorded here in
 reverse-chronological order. Each entry states *what* was decided and *why*.
 
+## 2026-09-18 — D19: TRANSIT_LATENCY_SECONDS = 0.0 pass-through delay (Milestone 5a)
+
+**Decision:** A named constant `TRANSIT_LATENCY_SECONDS = 0.0` is added to `src/config.py`. In `src/digital_twin.py`, the `transit_process` applies `yield env.timeout(TRANSIT_LATENCY_SECONDS)` to every emitted reading event. With latency set to 0.0 s (disabled by default), the stage acts as a transparent pass-through pipe connecting Source to Destination.
+
+**Rationale:** Maintaining a dedicated Transit process models realistic data transmission and processing delay while providing an architectural hook for future network latency stress-testing. Keeping it set to 0.0 s ensures that virtual arrival time (`sim_time_received`) matches elapsed dataset time (`delta_real`) exactly, enabling zero-discrepancy cross-checks against batch evaluation results from M3 and M4b in Milestone 5b.
+
+**Limitation:** Setting `TRANSIT_LATENCY_SECONDS = 0.0` assumes idealized instantaneous packet transmission and processing. Any nonzero delay in future experiments will shift event arrival times and alarm timestamps relative to the raw sensor timestamps, requiring separate validation.
+
+---
+
+## 2026-09-18 — D18: Event-driven virtual clock advancement via real inter-arrival gaps (Milestone 5a)
+
+**Decision:** SimPy's virtual simulation clock (`env.now`) advances exclusively using real inter-arrival gaps (`gap_seconds`, computed causally in M2), via `yield env.timeout(gap)`. No wall-clock pacing, `time.sleep()`, or fixed regular tick rates are used. Out and In series execute as independent, decoupled SimPy processes. Replay feeds `temp_injected` (the "as-observed" stream per D5) into the pipeline, never the clean `temp` column.
+
+**Rationale:** The physical IoT telemetry exhibits extreme irregular sampling (sampling intervals range from 0 s to >11 days across outages, CoV = 46.23). An event-driven virtual clock faithfully reproduces the real-world temporal dynamics of sensor arrivals while allowing 133 days of telemetry (97,603 readings across both series) to simulate in ~6 seconds of wall-clock time. Using `temp_injected` ensures the digital twin monitors what an operational sensor would actually report.
+
+**Limitation:** Virtual time progression does not reflect real-time processing bottlenecks or compute latency of downstream anomaly detection models (which will be benchmarked separately in M5b).
+
+---
+
+## 2026-09-18 — D17: 3-stage data-pipeline topology (Source → Transit → Destination) with no spatial topology (Milestone 5a)
+
+**Decision:** The digital twin architecture is structured as a 3-stage data pipeline: `Source` (sensor reading generation / emission), `Transit` (network transmission / processing latency), and `Destination` (monitoring / logging layer, where anomaly detection will reside in M5b). This structure models the computational telemetry pipeline, NOT a physical multi-location refrigerated supply chain route.
+
+**Rationale:** Separating generation, transmission, and monitoring into discrete SimPy processes follows standard discrete-event simulation design principles, enabling clean decoupling of concerns, modular testing, and independent latency modeling.
+
+**Limitation:** **No Real Spatial Topology Caveat:** The underlying dataset (`IOT-temp.csv`) contains no geographic routing, vehicle GPS coordinates, or multi-location facility transitions. The `room_id/id` column is a single invariant constant ("Room Admin") across all 97,605 rows (confirmed in Milestone 1 EDA). Therefore, the 3-stage structure must NOT be interpreted as physical cold-chain transit (e.g., warehouse → refrigerated truck → retail display). It is strictly a software telemetry ingestion and monitoring pipeline abstraction.
+
+---
+
 ## 2026-09-18 — D16: Causal single-window-per-row scoring for all alarm computations (Milestone 4b)
 
 **Decision:** For every row `i` in a given split-region (train_train, val, or test), exactly one window is constructed: the `LSTM_WINDOW_LENGTH = 30` contiguous rows ending at row `i` (i.e., rows `[i−29, i]`). All 30 rows in the window must come from the **same split-region** — there is strictly no reaching back across region boundaries (train_train ↔ val ↔ test). Normalization uses the **saved train-only statistics** from `lstm_norm_stats_{out,in}.json`; normalization is never recomputed. The reconstruction score for row `i` is the MSE between the model's reconstructed output and the actual normalized input **at the window's last timestep only** (timestep index −1). Rows without 29 full preceding same-region rows receive `score = NaN`; these blind-spot rows are **never filled in** by interpolation, the nearest valid score, or any other estimate. Blind-spot counts are reported explicitly per series and split.

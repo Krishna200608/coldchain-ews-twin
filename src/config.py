@@ -79,3 +79,16 @@ LSTM_WINDOW_STRIDE: int = 5
 # LSTM_VAL_FRACTION: proportion of the train period carved from its tail for validation.
 # Chronological train/val split (D11). Arbitrary documented default.
 LSTM_VAL_FRACTION: float = 0.1
+
+# ══ Milestone 5 constants ══════════════════════════════════════════════════════
+
+# TRANSIT_LATENCY_SECONDS: simulated end-to-end transmission/processing delay
+# between the Source (sensor reading generation) and Destination (monitoring)
+# stages of the SimPy digital twin replay pipeline.
+#
+# Set to 0.0 (DISABLED) by default so that sim_time_received exactly mirrors
+# the cumulative real inter-arrival gaps, enabling exact row-by-row cross-check
+# against batch M3/M4b results in Milestone 5b. Any nonzero value shifts all
+# alarm timestamps and must be documented as a new AD_LOG decision before use.
+# (D19 — see docs/AD_LOG.md).
+TRANSIT_LATENCY_SECONDS: float = 0.0
