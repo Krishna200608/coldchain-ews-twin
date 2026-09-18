@@ -349,8 +349,11 @@ Proceed immediately with local CPU inference via `python src/lstm_evaluation.py`
 
 ## Project Context and Hygiene
 
-### Academic Context
-This repository represents an applied research codebase developed for a corporate entrepreneurship academic project investigating digital twin architectures for logistics resilience.
+### Author and Academic Context
+- **Author:** Krishna Sikheriya (Roll No: IIT2023139)
+- **Program:** B.Tech, 7th Semester
+- **Institution:** Indian Institute of Information Technology, Allahabad (IIITA)
+- **Course Project:** Managing Corporate Entrepreneurship (Topic 21: Digital Twin-Based Early Warning System for Cold Chain Disruption Detection)
 
 ### Contributing
 This repository is an academic demonstration and portfolio artifact. External pull requests are not actively solicited. Issues detailing reproduction failures or architectural inquiries may be submitted via GitHub Issues.
