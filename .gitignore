@@ -12,6 +12,8 @@ data/processed/*.csv
 !data/processed/three_way_comparison.csv
 !data/processed/lstm_pr_curve_out.csv
 !data/processed/lstm_pr_curve_in.csv
+!data/processed/twin_replay_log_out.csv
+!data/processed/twin_replay_log_in.csv
 
 # ── Models (allow trained H5 weights) ─────────────────────────────────────────
 models/*.joblib
