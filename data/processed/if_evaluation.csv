@@ -1,0 +1,31 @@
+injection_id,series,type,alarm_timestamp_IF,lead_time_IF_min,alarm_timestamp_baseline,lead_time_baseline_min,irreversibility_timestamp,train_test_status
+out_step_000,Out,step,,,2018-10-18 14:52:00,,,train
+out_step_001,Out,step,2018-11-17 13:25:00,0.0,2018-11-17 13:25:00,0.0,2018-11-17 13:25:00,test
+out_step_002,Out,step,,,,,,train
+out_step_003,Out,step,,,2018-10-18 14:08:00,,,train
+out_step_004,Out,step,,,,,,train
+out_drift_005,Out,drift,,,2018-09-22 04:13:00,0.0,2018-09-22 04:13:00,train
+out_drift_006,Out,drift,,,2018-10-17 20:15:00,,,train
+out_drift_007,Out,drift,,,,,,train
+out_drift_008,Out,drift,,,,,,train
+out_drift_009,Out,drift,2018-10-30 01:59:00,64.0,2018-10-30 03:03:00,0.0,2018-10-30 03:03:00,test
+out_flatline_010,Out,flatline,,,2018-10-18 14:08:00,,,train
+out_flatline_011,Out,flatline,,,,,,train
+out_flatline_012,Out,flatline,2018-12-04 21:09:00,,,,,test
+out_flatline_013,Out,flatline,2018-11-25 01:22:00,,,,,test
+out_flatline_014,Out,flatline,,,,,,train
+in_step_015,In,step,,,2018-09-07 14:55:00,0.0,2018-09-07 14:55:00,train
+in_step_016,In,step,,,2018-08-16 07:15:00,,,train
+in_step_017,In,step,,,2018-09-27 05:04:00,0.0,2018-09-27 05:04:00,train
+in_step_018,In,step,2018-12-07 17:14:00,0.0,2018-12-07 17:14:00,0.0,2018-12-07 17:14:00,test
+in_step_019,In,step,,,2018-09-10 14:19:00,0.0,2018-09-10 14:19:00,train
+in_drift_020,In,drift,,,,,,train
+in_drift_021,In,drift,,,2018-09-11 13:56:00,,,train
+in_drift_022,In,drift,,,2018-09-25 00:34:00,0.0,2018-09-25 00:34:00,train
+in_drift_023,In,drift,2018-11-02 07:56:00,11.0,2018-11-02 08:07:00,0.0,2018-11-02 08:07:00,test
+in_drift_024,In,drift,,,2018-09-10 10:02:00,,,train
+in_flatline_025,In,flatline,,,,,,train
+in_flatline_026,In,flatline,,,,,,train
+in_flatline_027,In,flatline,,,,,,train
+in_flatline_028,In,flatline,,,,,,train
+in_flatline_029,In,flatline,,,,,,train
