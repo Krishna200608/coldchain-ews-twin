@@ -3,6 +3,15 @@ data/raw/
 
 # ── Large processed CSV datasets (re-generable via pipeline) ──────────────────
 data/processed/*.csv
+# Whitelist small evaluation-summary CSVs (not raw datasets)
+!data/processed/if_evaluation.csv
+!data/processed/injection_evaluation_baseline.csv
+!data/processed/injection_train_test_status.csv
+!data/processed/injection_log.csv
+!data/processed/lstm_evaluation.csv
+!data/processed/three_way_comparison.csv
+!data/processed/lstm_pr_curve_out.csv
+!data/processed/lstm_pr_curve_in.csv
 
 # ── Models (allow trained H5 weights) ─────────────────────────────────────────
 models/*.joblib

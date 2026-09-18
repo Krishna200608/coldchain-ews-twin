@@ -3,9 +3,55 @@
 All significant design/data decisions for this project are recorded here in
 reverse-chronological order. Each entry states *what* was decided and *why*.
 
+## 2026-09-18 — D16: Causal single-window-per-row scoring for all alarm computations (Milestone 4b)
+
+**Decision:** For every row `i` in a given split-region (train_train, val, or test), exactly one window is constructed: the `LSTM_WINDOW_LENGTH = 30` contiguous rows ending at row `i` (i.e., rows `[i−29, i]`). All 30 rows in the window must come from the **same split-region** — there is strictly no reaching back across region boundaries (train_train ↔ val ↔ test). Normalization uses the **saved train-only statistics** from `lstm_norm_stats_{out,in}.json`; normalization is never recomputed. The reconstruction score for row `i` is the MSE between the model's reconstructed output and the actual normalized input **at the window's last timestep only** (timestep index −1). Rows without 29 full preceding same-region rows receive `score = NaN`; these blind-spot rows are **never filled in** by interpolation, the nearest valid score, or any other estimate. Blind-spot counts are reported explicitly per series and split.
+
+**Rationale:** Single-window-per-row scoring is the only causal formulation for producing a per-row alarm flag. Using the last timestep MSE focuses the score on the current observation, making the reconstruction error interpretable as a signal for that specific reading rather than an average of historical accuracy. Cross-region boundary prohibition prevents test data from influencing the window features of the train period (or vice versa), maintaining strict chronological integrity. Saving normalization statistics from M4a and reusing them here ensures the M4b scoring pipeline is completely frozen — there are no ways for test distribution information to leak into feature scaling.
+
+**Limitation:** Each split-region independently loses its first 29 rows to the blind spot (LSTM_WINDOW_LENGTH − 1 = 29). For test-period evaluation, 29 rows are excluded per series (Out: 29/13,372 = 0.22%; In: 29/3,767 = 0.77%). All 6 test-side injections were verified to have zero blind-spot rows within their evaluation windows `[onset_ts, injection_end_ts + SEARCH_HORIZON_MINUTES]`. The last-timestep MSE discards reconstruction accuracy at earlier positions in the window; this makes the score noisier than a full-window MSE average, but preserves causal point-in-time interpretability.
+
+---
+
+## 2026-09-18 — D15: Trained LSTM weights committed to repository (Milestone 4b, retroactive documentation of M4a decision)
+
+**Decision:** The trained model weight files `models/lstm_out.h5` and `models/lstm_in.h5` are committed and tracked in the GitHub repository (`main` branch), despite their binary format (~193 KB each). They are explicitly NOT added to `.gitignore`. The `.gitignore` rule for `models/*.joblib` (Isolation Forest pickles) is retained separately, as Isolation Forest models can be trivially re-trained from source (deterministic, seconds), whereas LSTM model weights require a Colab GPU session to reproduce.
+
+**Rationale:** Committing the H5 weights provides reproducibility and auditability: any reviewer can pull the repository and run LSTM inference immediately without triggering a GPU training session. The files are small enough (~193 KB each) that HTTPS push/pull succeeds instantly and does not burden the repository. The alternative (`.gitignore`-ing and requiring re-training) would prevent Milestone 4b CPU inference from working out-of-the-box on a fresh clone.
+
+**Limitation:** `.h5` (HDF5 legacy format) is considered legacy by TensorFlow ≥ 2.12 (Keras 3 recommends `.keras` format). The Colab training notebook records the resulting `UserWarning` from `model.save()`. The weights remain usable for inference with `tf.keras.models.load_model(..., compile=False)`.
+
+---
+
+## 2026-09-18 — D14: Non-causal aggregation scope — calibration only (Milestone 4b)
+
+**Decision:** Window-level score aggregation (collecting causal per-row scores across the full `train_train + val` region into a single distribution) is used **exclusively** for computing the D13 threshold parameter — an offline, retrospective step that does not produce any `alarm_timestamp`. Any computation that produces an `alarm_timestamp` (the first row within a bounded search window where `lstm_anomaly = True`) is derived solely from the **causal per-row scores** defined in D16 and the threshold defined in D13. No future-looking aggregation, sliding-window average of scores, or smoothed alarm signal is used anywhere in the alarm pipeline.
+
+**Rationale:** In a deployed real-time EWS, only historical data is available when an alarm fires. Non-causal score aggregation (e.g., computing a centered moving average of reconstruction errors) would use future readings to smooth the score at a given timestamp — this is inadmissible for a live system. Restricting non-causal operations to offline calibration keeps the `alarm_timestamp` definition operationally valid and avoids artificial lead-time inflation.
+
+**Limitation:** The D13 calibration threshold is a global constant per series (not adaptive to local score dynamics). If the reconstruction error distribution drifts over the test period (e.g., due to seasonal shifts documented in D7's distributional drift addendum), a fixed threshold computed on `train_train + val` may become either too permissive or too conservative in later test windows.
+
+---
+
+## 2026-09-18 — D13: LSTM anomaly threshold — train-only causal score mean + K_SIGMA × std (Milestone 4b)
+
+**Decision:** The per-series anomaly threshold is defined as: `threshold = mean(valid train scores) + K_SIGMA × std(valid train scores)`, where `K_SIGMA = 2.0` (shared constant from `config.py`, consistent with the M2 baseline alarm — `D4`). "Valid train scores" refers to all non-NaN causal per-row scores (D16) computed on the `train_train + val` split. NaN (blind-spot) rows are excluded from the mean and std calculation. The threshold is computed **exclusively from training-period data** — the test split is never observed or used in any way during threshold computation. The threshold is **not** tuned to match the known injected-anomaly fraction in the test set.
+
+**Computed values:**
+- Series Out: threshold = **1.0101** (mean=0.1391, std=0.4355, n_valid=63,829)
+- Series In:  threshold = **1.5128** (mean=0.2698, std=0.6215, n_valid=16,519)
+
+**Rationale:** The 2-sigma convention is a standard heuristic for identifying statistically unusual events in a unimodal distribution. Using train-only scores maintains causal integrity: no future anomaly information contaminates the decision boundary. Reusing `K_SIGMA = 2.0` from D4 ensures the LSTM threshold is defined on the same statistical basis as the naive baseline, making the lead-time comparison meaningful.
+
+**Limitation:** The train-period LSTM reconstruction error distribution is right-skewed (both series have std >> mean, suggesting extreme outliers in the training period drive the threshold upward). The 2-sigma threshold (`~1.01` for Out, `~1.51` for In) is consequently high relative to most test anomaly scores, producing low recall and low precision on the Out series. The threshold was intentionally left at K_SIGMA=2.0 — not tuned to the known injection fraction — as tuning would leak ground-truth test labels into the decision boundary.
+
+---
+
+
 ## 2026-09-17 — D12: LSTM-Autoencoder architecture and training protocol (Milestone 4a)
 
 **Decision:** The sequential reconstruction architecture is defined in Keras/TensorFlow as:
+
 `Encoder LSTM(32 units)` → bottleneck (last hidden state) → `RepeatVector(LSTM_WINDOW_LENGTH = 30)` → `Decoder LSTM(32 units, return_sequences=True)` → `TimeDistributed(Dense(2))` (reconstructing normalized `temp_injected` and `log_gap_seconds`). Training is configured with the Adam optimizer, MSE loss, `batch_size = 256`, up to 50 epochs, and early stopping on validation loss (`patience = 5`, restoring best weights). Models are trained independently per series (`lstm_out.h5`, `lstm_in.h5`).
 
 **Rationale:** An LSTM autoencoder captures sequential dependencies and temporal autocorrelation across time that classical models (like Isolation Forest) cannot model. Learning to reconstruct normal multi-step thermal patterns allows the model to detect anomalies via reconstruction error spikes, providing sensitivity to subtle sequential disruptions.
