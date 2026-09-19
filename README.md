@@ -6,10 +6,11 @@
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3+-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15+-FF6F00?logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
 [![SimPy](https://img.shields.io/badge/SimPy-4.1+-blue?logo=python&logoColor=white)](https://simpy.readthedocs.io/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.33+-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?logo=jupyter&logoColor=white)](https://jupyter.org/)
 
 > **Important: Structural Proxy Dataset Notice**  
-> The dataset used in this project (`atulanandjha/temperature-readings-iot-devices` on Kaggle; file: `IOT-temp.csv`, 6.63 MB) is a **generic IoT temperature sensor log — it is not operational refrigerated-transport telemetry**. It is utilized exclusively as an experimental **structural proxy** to establish streaming ingestion pipelines, evaluate irregular sampling dynamics, and construct an end-to-end anomaly-detection architecture prior to deploying on proprietary cold-chain logistics telemetry. The dataset contains an invariant room identifier (`room_id/id = "Room Admin"` across all 97,605 unique records) and lacks physical spatial coordinates or geographic transit topology. Every derived threshold, synthetic perturbation, and performance metric is an engineering proxy construct and makes no food-safety, regulatory, or spoilage-kinetics claim. See `docs/AD_LOG.md` (decisions D1 through D19).
+> The dataset used in this project (`atulanandjha/temperature-readings-iot-devices` on Kaggle; file: `IOT-temp.csv`, 6.63 MB) is a **generic IoT temperature sensor log — it is not operational refrigerated-transport telemetry**. It is utilized exclusively as an experimental **structural proxy** to establish streaming ingestion pipelines, evaluate irregular sampling dynamics, and construct an end-to-end anomaly-detection architecture prior to deploying on proprietary cold-chain logistics telemetry. The dataset contains an invariant room identifier (`room_id/id = "Room Admin"` across all 97,605 unique records) and lacks physical spatial coordinates or geographic transit topology. Every derived threshold, synthetic perturbation, and performance metric is an engineering proxy construct and makes no food-safety, regulatory, or spoilage-kinetics claim. See `docs/AD_LOG.md` (decisions D1 through D34).
 
 ---
 
@@ -29,6 +30,7 @@
   - [2. Kaggle API Configuration](#2-kaggle-api-configuration)
   - [3. Pipeline Execution](#3-pipeline-execution)
 - [Milestone 4a/4b Colab Workflow](#milestone-4a4b-colab-workflow)
+- [Live Demo Dashboard](#live-demo-dashboard)
 - [Technology Stack](#technology-stack)
 - [Project Context and Hygiene](#project-context-and-hygiene)
 
@@ -44,7 +46,7 @@ Traditional monitoring architectures rely on static upper-bound threshold alarms
 ### The Hybrid Early Warning System
 This repository implements a modular, reproducible Early Warning System (EWS) that couples discrete-event digital twin simulation with hybrid machine learning anomaly detection:
 
-1. **Digital Twin Simulation Engine (`SimPy`):** Rather than assuming uniform fixed-interval sensor arrivals, the digital twin operates on an event-driven virtual clock driven by real historical inter-arrival gaps (`gap_seconds`). Telemetry streams through a 3-stage data pipeline abstraction (`Source → Transit → Destination`).
+1. **Digital Twin Simulation Engine (`SimPy`):** Rather than assuming uniform fixed-interval sensor arrivals, the digital twin operates on an event-driven virtual clock driven by real historical inter-arrival gaps (`gap_seconds`). Telemetry streams through a 3-stage data pipeline abstraction (`Source -> Transit -> Destination`).
 2. **Classical Isolation Forest Baseline (`scikit-learn`):** An unsupervised tree ensemble monitoring point-in-time multi-feature shifts (`temp_injected`, `gap_seconds`, and causal trailing rolling statistics `rolling_mean_if`, `rolling_std_if`).
 3. **Deep Sequential Reconstruction (`TensorFlow / Keras`):** A bivariate LSTM-Autoencoder trained on normal operations to reconstruct sequential thermal patterns (`temp_injected`, `log1p(gap_seconds)`) over count-based sliding windows. Anomalies trigger spikes in reconstruction mean squared error (MSE).
 4. **Early Warning Lead Time Formulation:** The primary evaluation metric is **lead time** ($\Delta t_{\text{lead}} = t_{\text{irreversibility}} - t_{\text{alarm}}$), defined as the time interval between when an anomaly detector triggers an alarm and when a sustained thermal excursion reaches the irreversible failure point. A positive lead time ($\Delta t > 0$) provides actionable runway for operators to execute corrective interventions (e.g., auxiliary chilling, routing adjustment) before product loss occurs.
@@ -83,12 +85,21 @@ flowchart TD
         M --> N
     end
 
-    subgraph DigitalTwin["5. Discrete-Event Simulation Pipeline (D17-D19)"]
+    subgraph DigitalTwin["5. Discrete-Event Simulation Pipeline (D17-D19, D27)"]
         F --> O["src/digital_twin.py<br/>Source Process (Real gap_seconds)"]
         O --> P["Transit Process<br/>TRANSIT_LATENCY_SECONDS = 0.0 s"]
-        P --> Q["Destination Process<br/>Telemetry Event Logging & Time Verification"]
+        P --> Q["Destination Process (D27)<br/>Runs BaselineMonitor, IFMonitor, LSTMMonitor<br/>Generates twin_alarms_{baseline,if,lstm}_{out,in}.csv"]
         Q --> R["src/twin_verification.py<br/>Row-by-Row Value & SimTime Parity Check"]
+        Q --> S["src/twin_crosscheck.py (M5b)<br/>Cross-Check Live vs M2-M4b Batch<br/>100% Exact Match on 6 Test Injections (18/18)"]
+        N -.-> S
     end
+
+    subgraph Presentation["6. Presentation Layer — Live Digital Twin Dashboard (M6, D28-D34)"]
+        T["dashboard/app.py & components/<br/>Accelerated Replay Semantics (D28)<br/>Guided Tour & Free Explore Modes (D29)<br/>D33 Silent Buffer Pre-warming<br/>D34 Runtime Interpolated Showcase Narratives"]
+    end
+
+    Q -.-> T
+    S -.-> T
 ```
 
 ---
@@ -105,10 +116,31 @@ coldchain-ews-twin/
 ├── colab/
 │   └── lstm_train.ipynb                # GPU training notebook with automated PAT GitHub push
 │
+├── dashboard/                          # Milestone 6 Streamlit presentation dashboard layer
+│   ├── app.py                          # Thin presentation entry point & layout orchestrator
+│   ├── constants.py                    # UI constants, display parameters & src/config imports
+│   ├── data_loader.py                  # Cached metadata/stream loaders & D32 startup verification
+│   ├── README.md                       # Comprehensive dashboard user guide & operating modes
+│   ├── replay_engine.py                # D33 pre-warm simulation & active slice extraction
+│   └── components/                     # Modular presentation components
+│       ├── __init__.py                 # Component package marker
+│       ├── alert_log.py                # Live streaming alert log table & multi-detector filters
+│       ├── banners.py                  # D31 persistent proxy notice & train-side demo banners
+│       ├── crosscheck_audit.py         # M5b verification audit table & protocol expander
+│       ├── detector_cards.py           # Real-time telemetry bar & 3 detector metric cards
+│       ├── showcase.py                 # D34 dynamic showcase captions & metrics row
+│       └── telemetry_chart.py          # Interactive Altair streaming chart & score diagnostics
+│
 ├── data/
 │   ├── raw/                            # Directory for raw dataset (IOT-temp.csv; gitignored)
 │   └── processed/                      # Evaluation summaries and processed artifacts
 │       ├── if_evaluation.csv           # Isolation Forest point-wise and lead-time metrics
+│       ├── if_pr_curve_in.csv          # Isolation Forest Precision-Recall coordinates (In series)
+│       ├── if_pr_curve_out.csv         # Isolation Forest Precision-Recall coordinates (Out series)
+│       ├── if_scores_in.csv            # Point-in-time Isolation Forest decision scores (In series)
+│       ├── if_scores_out.csv           # Point-in-time Isolation Forest decision scores (Out series)
+│       ├── in_features.csv             # Feature-engineered telemetry dataset (In series)
+│       ├── in_labeled.csv              # Ground-truth labeled synthetic injection stream (In series)
 │       ├── injection_evaluation_baseline.csv  # Baseline alarm and irreversibility timestamps
 │       ├── injection_log.csv           # Ground-truth injection catalog (30 synthetic anomalies)
 │       ├── injection_train_test_status.csv    # Chronological partition flags (train vs test)
@@ -119,12 +151,25 @@ coldchain-ews-twin/
 │       ├── lstm_pr_curve_out.csv       # Precision-Recall curve coordinates (Out series)
 │       ├── lstm_training_log_in.json   # Colab GPU training history and loss logs (In series)
 │       ├── lstm_training_log_out.json  # Colab GPU training history and loss logs (Out series)
+│       ├── lstm_windows_in_train.npz   # Train window arrays for LSTM-Autoencoder (In series)
+│       ├── lstm_windows_in_val.npz     # Validation window arrays for LSTM-Autoencoder (In series)
+│       ├── lstm_windows_out_train.npz  # Train window arrays for LSTM-Autoencoder (Out series)
+│       ├── lstm_windows_out_val.npz    # Validation window arrays for LSTM-Autoencoder (Out series)
+│       ├── out_features.csv            # Feature-engineered telemetry dataset (Out series)
+│       ├── out_labeled.csv             # Ground-truth labeled synthetic injection stream (Out series)
 │       ├── three_way_comparison.csv    # Merged comparative benchmark (Baseline vs IF vs LSTM)
+│       ├── twin_alarms_baseline_in.csv # Digital twin streaming alarms: Baseline (In series)
+│       ├── twin_alarms_baseline_out.csv # Digital twin streaming alarms: Baseline (Out series)
+│       ├── twin_alarms_if_in.csv       # Digital twin streaming alarms: Isolation Forest (In series)
+│       ├── twin_alarms_if_out.csv      # Digital twin streaming alarms: Isolation Forest (Out series)
+│       ├── twin_alarms_lstm_in.csv     # Digital twin streaming alarms: LSTM-Autoencoder (In series)
+│       ├── twin_alarms_lstm_out.csv    # Digital twin streaming alarms: LSTM-Autoencoder (Out series)
+│       ├── twin_crosscheck_report.csv  # Milestone 5b live vs batch cross-check audit report
 │       ├── twin_replay_log_in.csv      # SimPy digital twin simulation log (In series)
 │       └── twin_replay_log_out.csv     # SimPy digital twin simulation log (Out series)
 │
 ├── docs/
-│   ├── AD_LOG.md                       # Architecture Decision Log (decisions D1 through D19)
+│   ├── AD_LOG.md                       # Architecture Decision Log (decisions D1 through D34)
 │   ├── data_profile.md                 # Quantitative EDA findings from Milestone 1
 │   ├── Krishna_Sikheriya_Topic21_Synopsis.docx # Academic research synopsis
 │   └── *.png                           # Generated publication figures and evaluation plots
@@ -140,22 +185,28 @@ coldchain-ews-twin/
 │   ├── 02_preprocessing_and_labeling.ipynb # Milestone 2: Feature engineering & anomaly injection
 │   ├── 03_isolation_forest.ipynb       # Milestone 3: Classical unsupervised baseline detector
 │   ├── 04_lstm_evaluation.ipynb        # Milestone 4b: Deep reconstruction error & lead-time evaluation
-│   └── 05_digital_twin_replay.ipynb    # Milestone 5a: SimPy simulation replay & fidelity verification
+│   ├── 05_digital_twin_replay.ipynb    # Milestone 5a: SimPy simulation replay & fidelity verification
+│   └── 06_digital_twin_live_monitors.ipynb # Milestone 5b: Live streaming monitors & batch cross-check
 │
-└── src/
-    ├── anomaly_injection.py            # Controlled synthetic perturbation generator (D3)
-    ├── baseline_and_labels.py          # Naive 2-sigma threshold and irreversibility milestone (D4)
-    ├── config.py                       # Single source of truth for global constants (D1-D19)
-    ├── data_acquisition.py             # Authenticated Kaggle dataset download utility
-    ├── digital_twin.py                 # SimPy 3-stage event-driven replay engine (D17, D18)
-    ├── if_evaluation.py                # Point-wise and lead-time evaluation for Isolation Forest
-    ├── isolation_forest_model.py       # Trailing-feature recomputation and IF training (D7, D22)
-    ├── lstm_evaluation.py              # Causal sliding-window reconstruction scoring (D13, D16)
-    ├── lstm_prep.py                    # Bivariate sliding-window extraction & normalization (D9-D11)
-    ├── preprocessing.py                # Timestamp parsing, deduplication, and initial features
-    ├── split_utils.py                  # Chronological train/test splitting utility (D6)
-    ├── three_way_comparison.py         # Comparative benchmark table and visualization synthesis
-    └── twin_verification.py            # Row-by-row simulation fidelity and SimTime validation
+├── src/
+│   ├── anomaly_injection.py            # Controlled synthetic perturbation generator (D3)
+│   ├── baseline_and_labels.py          # Naive 2-sigma threshold and irreversibility milestone (D4)
+│   ├── config.py                       # Single source of truth for global constants (D1-D34)
+│   ├── data_acquisition.py             # Authenticated Kaggle dataset download utility
+│   ├── digital_twin.py                 # SimPy 3-stage event-driven replay engine (D17, D18)
+│   ├── if_evaluation.py                # Point-wise and lead-time evaluation for Isolation Forest
+│   ├── isolation_forest_model.py       # Trailing-feature recomputation and IF training (D7, D22)
+│   ├── lstm_evaluation.py              # Causal sliding-window reconstruction scoring (D13, D16)
+│   ├── lstm_prep.py                    # Bivariate sliding-window extraction & normalization (D9-D11)
+│   ├── preprocessing.py                # Timestamp parsing, deduplication, and initial features
+│   ├── split_utils.py                  # Chronological train/test splitting utility (D6)
+│   ├── three_way_comparison.py         # Comparative benchmark table and visualization synthesis
+│   ├── twin_crosscheck.py              # Live vs batch cross-check audit & verification report (M5b)
+│   ├── twin_monitors.py                # Online streaming monitors for Baseline, IF, LSTM (M5b, D27)
+│   └── twin_verification.py            # Row-by-row simulation fidelity and SimTime validation
+│
+└── tests/
+    └── test_d33_prewarm.py             # Automated D32 startup and D33 buffer pre-warm test suite
 ```
 
 ---
@@ -170,7 +221,11 @@ coldchain-ews-twin/
 | **Milestone 4a** | LSTM-Autoencoder Data Preparation & Colab Authoring | `src/lstm_prep.py`, `colab/lstm_train.ipynb`, `docs/AD_LOG.md` | Completed |
 | **Milestone 4b** | Colab GPU Training, Causal Reconstruction & Comparative Evaluation | `src/lstm_evaluation.py`, `src/three_way_comparison.py`, `notebooks/04_lstm_evaluation.ipynb` | Completed |
 | **Milestone 5a** | SimPy Discrete-Event Digital Twin Replay Engine (Skeleton) | `src/digital_twin.py`, `src/twin_verification.py`, `notebooks/05_digital_twin_replay.ipynb` | Completed |
-| **Milestone 5b** | Integrated Digital Twin EWS with Online Anomaly Detectors | In-flight integration of live detectors into Destination process | Planned |
+| **Milestone 5b** | Integrated Digital Twin EWS with Online Anomaly Detectors | `src/twin_monitors.py`, `src/twin_crosscheck.py`, `notebooks/06_digital_twin_live_monitors.ipynb`, `data/processed/twin_crosscheck_report.csv` | Completed |
+| **Milestone 6** | Streamlit Live Digital Twin Presentation Dashboard | `dashboard/app.py`, `dashboard/README.md`, `tests/test_d33_prewarm.py` | Completed |
+| **Milestone 6.1** | Dashboard Bug Fixes & Material Symbols Icon Replacement | `dashboard/app.py` | Completed |
+| **Milestone 6.2** | Remaining Truncation Fixes & Dashboard Metric/Table Audit | `dashboard/app.py` | Completed |
+| **Milestone 6.3** | Timestamp Regression Fix & Modular Architecture Refactor | `dashboard/app.py`, `dashboard/constants.py`, `dashboard/data_loader.py`, `dashboard/replay_engine.py`, `dashboard/components/` | Completed |
 
 ---
 
@@ -200,7 +255,7 @@ Because the proxy dataset contains no ground-truth disruption annotations, Miles
 ### Comparative Model Benchmark and Lead Times
 Test-side performance on the 6 evaluation injections was evaluated across three systems:
 1. **Naive Baseline:** Static threshold set at train-period mean $+ 2.0\sigma$. Irreversibility defined as a sustained 10-minute exceedance (`D_IRREV_MINUTES = 10.0`, D4).
-2. **Isolation Forest:** Unsupervised isolation ensemble fit on train-only data with contamination 0.01.
+2. **Isolation Forest:** Unsupervised isolation ensemble fit on train-only data with `contamination='auto'` (scikit-learn default heuristic, untuned to strictly prevent test-label leakage, D7).
 3. **LSTM-Autoencoder:** Causal last-timestep MSE reconstruction scoring (D16) evaluated against a train-only $2.0\sigma$ threshold (D13; Out threshold $= 1.0101$, In threshold $= 1.5128$).
 
 Summary of early warning lead times ($\Delta t = t_{\text{irreversibility}} - t_{\text{alarm}}$, in minutes) from `data/processed/three_way_comparison.csv`:
@@ -266,7 +321,7 @@ The raw dataset is acquired programmatically via the Kaggle API.
 > Never commit `kaggle.json` to source control. The repository `.gitignore` explicitly excludes `kaggle.json` and `.kaggle/`.
 
 ### 3. Pipeline Execution
-To reproduce the pipeline from raw ingestion through simulation verification, execute the following commands in sequence using `.venv`:
+To reproduce the pipeline from raw ingestion through simulation verification and dashboard deployment, execute the following commands in sequence using `.venv`:
 
 ```bash
 # 1. Download raw telemetry to data/raw/IOT-temp.csv
@@ -297,6 +352,18 @@ python src/three_way_comparison.py
 # 9. Execute SimPy digital twin replay engine and verify fidelity
 python src/digital_twin.py
 python src/twin_verification.py
+
+# 10. Run online streaming monitors within discrete-event digital twin
+python src/twin_monitors.py
+
+# 11. Execute rigorous batch vs. live cross-check verification
+python src/twin_crosscheck.py
+
+# 12. Run automated test suite (D32 startup check & D33 buffer pre-warming)
+python -m unittest tests/test_d33_prewarm.py
+
+# 13. Launch interactive presentation-grade Streamlit dashboard
+streamlit run dashboard/app.py
 ```
 
 ---
@@ -309,7 +376,7 @@ Because training the sequential LSTM-Autoencoder requires GPU acceleration, trai
 1. Open [`colab/lstm_train.ipynb`](colab/lstm_train.ipynb) in Google Colab.
 2. In the left panel, select the **Secrets** tab (key icon).
 3. Add a secret named `GITHUB_TOKEN` containing a GitHub Personal Access Token (PAT) with `repo` contents write permissions. Enable **Notebook access**.
-4. Set the runtime environment to **T4 GPU** (`Runtime → Change runtime type → T4 GPU`).
+4. Set the runtime environment to **T4 GPU** (`Runtime -> Change runtime type -> T4 GPU`).
 
 ### Step 2: Automated Training and Remote Push
 Execute all cells in `colab/lstm_train.ipynb`. The notebook automatically:
@@ -330,6 +397,28 @@ Proceed immediately with local CPU inference via `python src/lstm_evaluation.py`
 
 ---
 
+## Live Demo Dashboard
+
+Milestones 6 through 6.3 introduce an interactive, presentation-grade Streamlit dashboard designed for instructor evaluations, viva demonstrations, and technical walkthroughs.
+
+The dashboard operates in two dedicated modes (D29):
+1. **Guided Tour (Viva Showcase):** A structured, 4-step pedagogical sequence showcasing distinct anomaly archetypes on out-of-sample test injections (`out_step_001`, `out_drift_009`, `out_flatline_013`, and `in_drift_023`), dynamically interpolating verified detection metrics, alarm timestamps, and early warning lead times (D34).
+2. **Free Explore (All 30 Injections):** An unconstrained exploration interface covering all 30 synthetic anomalies across both Out and In series, featuring explicit visual demarcation between out-of-sample test benchmarks (`[TEST]`) and training-region demonstration previews (`[TRAIN DEMO]`, D26, D31).
+
+Key runtime architectural safeguards include:
+- **Zero Logic Duplication (D27):** Directly imports and executes verified detectors (`BaselineMonitor`, `IFMonitor`, `LSTMMonitor`) from `src/twin_monitors.py` without rewriting detection rules.
+- **Display-Only Accelerated Replay (D28):** Playback speed factors (`1x`, `5x`, `10x`, `25x`, `Instant`) adjust UI pacing only and never modify sensor timestamps or values passed to models.
+- **Silent Buffer Pre-Warming (D33):** Automatically pre-warms detector buffers with preceding 10 (Isolation Forest) and 30 (LSTM-Autoencoder) readings prior to the visible window, eliminating cold-start artifacts and replicating exact batch alarm timestamps (18/18 bit-exact matches).
+
+To launch the dashboard locally:
+```bash
+streamlit run dashboard/app.py
+```
+
+For complete documentation on UI components, playback controls, pre-flight verification gates, and architectural decisions, refer to [`dashboard/README.md`](dashboard/README.md).
+
+---
+
 ## Technology Stack
 
 | Category | Technology | Purpose in Project |
@@ -338,6 +427,8 @@ Proceed immediately with local CPU inference via `python src/lstm_evaluation.py`
 | **Simulation** | SimPy 4.1+ | Discrete-event digital twin replay engine with virtual clocks |
 | **Machine Learning** | scikit-learn 1.3+ | Classical Isolation Forest unsupervised anomaly detector |
 | **Deep Learning** | TensorFlow 2.15+ / Keras 3 | Sequential LSTM-Autoencoder architecture and CPU inference |
+| **Interactive UI** | Streamlit 1.33+ | Live presentation-grade digital twin anomaly monitoring dashboard |
+| **Interactive Viz** | Altair 5.0+ | Declarative streaming telemetry and alarm horizon charts |
 | **Data Processing** | Pandas 2.0+, NumPy 1.26+ | Irregular time-series processing, windowing, and metrics |
 | **Scientific Computing** | SciPy 1.12+ | Statistical distributions and metric calculations |
 | **Visualization** | Matplotlib 3.8+, Seaborn 0.13+ | Precision-recall curves, reconstruction timelines, and lead-time plots |
