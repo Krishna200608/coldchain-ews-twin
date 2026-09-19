@@ -1,0 +1,91 @@
+injection_id,series,type,train_test_status,detector,live_alarm_timestamp,batch_alarm_timestamp,match,notes
+out_step_000,Out,step,train,baseline,2018-10-18 14:52:00,2018-10-18 14:52:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_step_000,Out,step,train,if,2018-10-18 14:52:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_step_000,Out,step,train,lstm,2018-10-18 14:52:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_step_001,Out,step,test,baseline,2018-11-17 13:25:00,2018-11-17 13:25:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_step_001,Out,step,test,if,2018-11-17 13:25:00,2018-11-17 13:25:00,True,Exact match with M3 batch test evaluation
+out_step_001,Out,step,test,lstm,2018-11-17 13:25:00,2018-11-17 13:25:00,True,Exact match with M4b batch test evaluation; onset post-dates first 29 test rows (unaffected by D23)
+out_step_002,Out,step,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_step_002,Out,step,train,if,2018-09-09 15:17:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_step_002,Out,step,train,lstm,2018-09-09 15:17:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_step_003,Out,step,train,baseline,2018-10-18 14:08:00,2018-10-18 14:08:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_step_003,Out,step,train,if,2018-10-18 14:08:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_step_003,Out,step,train,lstm,2018-10-18 14:08:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_step_004,Out,step,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_step_004,Out,step,train,if,2018-09-10 10:05:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_step_004,Out,step,train,lstm,2018-09-10 10:05:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_005,Out,drift,train,baseline,2018-09-22 04:13:00,2018-09-22 04:13:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_drift_005,Out,drift,train,if,2018-09-22 03:55:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_005,Out,drift,train,lstm,2018-09-22 04:21:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_006,Out,drift,train,baseline,2018-10-17 20:15:00,2018-10-17 20:15:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_drift_006,Out,drift,train,if,2018-10-17 20:14:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_006,Out,drift,train,lstm,2018-10-17 20:14:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_007,Out,drift,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_drift_007,Out,drift,train,if,2018-10-17 05:20:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_007,Out,drift,train,lstm,2018-10-17 05:20:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_008,Out,drift,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_drift_008,Out,drift,train,if,2018-10-17 14:42:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_008,Out,drift,train,lstm,2018-10-17 14:42:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_drift_009,Out,drift,test,baseline,2018-10-30 03:03:00,2018-10-30 03:03:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_drift_009,Out,drift,test,if,2018-10-30 01:59:00,2018-10-30 01:59:00,True,Exact match with M3 batch test evaluation
+out_drift_009,Out,drift,test,lstm,2018-10-30 03:17:00,2018-10-30 03:17:00,True,Exact match with M4b batch test evaluation; onset post-dates first 29 test rows (unaffected by D23)
+out_flatline_010,Out,flatline,train,baseline,2018-10-18 14:08:00,2018-10-18 14:08:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_flatline_010,Out,flatline,train,if,2018-10-18 14:08:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_flatline_010,Out,flatline,train,lstm,2018-10-18 13:58:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_flatline_011,Out,flatline,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_flatline_011,Out,flatline,train,if,2018-09-15 18:30:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_flatline_011,Out,flatline,train,lstm,2018-09-16 14:25:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_flatline_012,Out,flatline,test,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_flatline_012,Out,flatline,test,if,2018-12-04 21:09:00,2018-12-04 21:09:00,True,Exact match with M3 batch test evaluation
+out_flatline_012,Out,flatline,test,lstm,2018-12-04 21:03:00,2018-12-04 21:03:00,True,Exact match with M4b batch test evaluation; onset post-dates first 29 test rows (unaffected by D23)
+out_flatline_013,Out,flatline,test,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_flatline_013,Out,flatline,test,if,2018-11-25 01:22:00,2018-11-25 01:22:00,True,Exact match with M3 batch test evaluation
+out_flatline_013,Out,flatline,test,lstm,,,True,Exact match (never flagged in window; onset post-dates first 29 test rows)
+out_flatline_014,Out,flatline,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+out_flatline_014,Out,flatline,train,if,,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+out_flatline_014,Out,flatline,train,lstm,2018-10-18 15:06:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_step_015,In,step,train,baseline,2018-09-07 14:55:00,2018-09-07 14:55:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_step_015,In,step,train,if,2018-09-07 14:55:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_step_015,In,step,train,lstm,2018-09-07 14:55:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_step_016,In,step,train,baseline,2018-08-16 07:15:00,2018-08-16 07:15:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_step_016,In,step,train,if,2018-08-16 07:15:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_step_016,In,step,train,lstm,2018-08-16 07:15:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_step_017,In,step,train,baseline,2018-09-27 05:04:00,2018-09-27 05:04:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_step_017,In,step,train,if,2018-09-27 05:04:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_step_017,In,step,train,lstm,2018-09-27 05:04:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_step_018,In,step,test,baseline,2018-12-07 17:14:00,2018-12-07 17:14:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_step_018,In,step,test,if,2018-12-07 17:14:00,2018-12-07 17:14:00,True,Exact match with M3 batch test evaluation
+in_step_018,In,step,test,lstm,2018-12-07 17:14:00,2018-12-07 17:14:00,True,Exact match with M4b batch test evaluation; onset post-dates first 29 test rows (unaffected by D23)
+in_step_019,In,step,train,baseline,2018-09-10 14:19:00,2018-09-10 14:19:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_step_019,In,step,train,if,2018-09-10 14:19:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_step_019,In,step,train,lstm,2018-09-10 14:19:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_drift_020,In,drift,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_drift_020,In,drift,train,if,2018-09-06 14:10:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_drift_020,In,drift,train,lstm,2018-09-06 14:24:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_drift_021,In,drift,train,baseline,2018-09-11 13:56:00,2018-09-11 13:56:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_drift_021,In,drift,train,if,2018-09-11 13:56:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_drift_021,In,drift,train,lstm,2018-09-11 13:57:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_drift_022,In,drift,train,baseline,2018-09-25 00:34:00,2018-09-25 00:34:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_drift_022,In,drift,train,if,2018-09-25 00:30:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_drift_022,In,drift,train,lstm,2018-09-25 02:42:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_drift_023,In,drift,test,baseline,2018-11-02 08:07:00,2018-11-02 08:07:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_drift_023,In,drift,test,if,2018-11-02 07:56:00,2018-11-02 07:56:00,True,Exact match with M3 batch test evaluation
+in_drift_023,In,drift,test,lstm,2018-11-02 08:07:00,2018-11-02 08:07:00,True,Exact match with M4b batch test evaluation; onset post-dates first 29 test rows (unaffected by D23)
+in_drift_024,In,drift,train,baseline,2018-09-10 10:02:00,2018-09-10 10:02:00,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_drift_024,In,drift,train,if,2018-09-10 10:02:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_drift_024,In,drift,train,lstm,2018-09-10 10:02:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_025,In,flatline,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_flatline_025,In,flatline,train,if,,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_025,In,flatline,train,lstm,,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_026,In,flatline,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_flatline_026,In,flatline,train,if,,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_026,In,flatline,train,lstm,2018-09-10 16:16:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_027,In,flatline,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_flatline_027,In,flatline,train,if,,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_027,In,flatline,train,lstm,2018-09-10 09:15:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_028,In,flatline,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_flatline_028,In,flatline,train,if,2018-09-15 20:12:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_028,In,flatline,train,lstm,,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_029,In,flatline,train,baseline,,,True,"Exact match with M2 baseline (whole-series threshold, D24)"
+in_flatline_029,In,flatline,train,if,,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train
+in_flatline_029,In,flatline,train,lstm,2018-09-07 15:52:00,,not_applicable,Demo only — model had training exposure (D26); batch value not computed for train

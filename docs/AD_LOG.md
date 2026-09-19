@@ -3,6 +3,53 @@
 All significant design/data decisions for this project are recorded here in
 reverse-chronological order. Each entry states *what* was decided and *why*.
 
+## 2026-09-19 — D26: Dual reporting structure — scientific benchmark vs. deployment demo (Milestone 5b)
+
+**Decision:** Live streaming anomaly detection is executed and reported for all 30 synthetic injections across the entire 133-day replay stream. However, reporting strictly segregates results into two distinct evaluation categories:
+1. **Test-side injections (6 events):** The ONLY scientifically valid, out-of-sample benchmark (matching M3 and M4b). Models had zero exposure to this period during training.
+2. **Train-side injections (24 events):** Strictly labeled as "deployment demonstration only" (demo-only). Because models were fit on the training period, live alarms triggered on these rows demonstrate streaming pipeline throughput, memory buffer maintenance, and real-time execution mechanics, but carry NO validity as detection performance claims. Train-side results are never merged into out-of-sample accuracy or lead-time metrics.
+
+**Rationale:** In an operational deployment, a digital twin monitors an ongoing stream indefinitely without knowledge of historical train/test partitions. Running detection across the entire replay demonstrates the twin's end-to-end viability. However, claiming performance on data used to fit the models would constitute gross methodological circularity. Explicitly bifurcating the report upholds rigorous academic and scientific standards.
+
+**Limitation:** Test-side sample size remains constrained to 6 injections (1 Out step, 1 Out drift, 2 Out flatlines, 1 In step, 1 In drift) due to the strict chronological partition (D6).
+
+---
+
+## 2026-09-19 — D25: Pre-flight model regeneration gate and exact batch verification (Milestone 5b)
+
+**Decision:** Before integrating anomaly detectors into the digital twin, `models/isolation_forest_{out,in}.joblib` were regenerated fresh from source (`src/isolation_forest_model.py`) using `.venv`. A strict pre-flight verification gate was executed: the regenerated models were evaluated against `data/processed/if_evaluation.csv` (M3 baseline). An exact, bit-for-bit reproduction of all alarm timestamps and lead times across the 6 test-side injections was required before proceeding to twin integration.
+
+**Rationale:** Model artifacts (`*.joblib`) are excluded from version control under `.gitignore` to prevent repository bloat. Ensuring that fresh execution of the frozen training pipeline deterministically reproduces historical metrics guarantees that any observed discrepancy in the digital twin stems from streaming architecture differences rather than silent model drift or dependency discrepancies.
+
+**Limitation:** Regeneration relies on the fixed random seed (`IF_RANDOM_STATE = 42`) and scikit-learn deterministic tree construction. Scikit-learn version differences across environments could theoretically alter tree split thresholds if dependencies are unpinned.
+
+---
+
+## 2026-09-19 — D24: Whole-series baseline threshold vs. train-only ML thresholds (Milestone 5b)
+
+**Decision:** The live `BaselineMonitor` recomputes Milestone 2's naive threshold (`threshold = mean + K_SIGMA * std`, with `K_SIGMA = 2.0`) dynamically at startup from the clean feature files (`out_features.csv`, `in_features.csv`) across the entire historical series, without an artificial train/test partition (since M2 predated the M3 split). In contrast, Isolation Forest and LSTM-Autoencoder thresholds are calibrated strictly on training-split data (`ts < cutoff_ts`). These two thresholding strategies are explicitly documented as fundamentally distinct operational regimes and are not presented as equivalent statistical baselines.
+
+**Rationale:** Milestone 2 had no saved threshold artifact on disk. Recomputing the threshold directly from the uncontaminated feature files preserves exact fidelity to M2's original experimental protocol. Acknowledging the whole-series nature of the baseline prevents false equivalence with the out-of-sample machine learning models.
+
+**Limitation:** Whole-series thresholding incorporates global mean and variance across the full dataset span, creating lookahead knowledge for the naive baseline that the train-only ML models did not possess.
+
+---
+
+## 2026-09-19 — D23: Continuous monitor buffer accumulation without boundary resets (Milestone 5b)
+
+**Decision:** In the live digital twin, detector memory buffers (`deque(maxlen=10)` for IF rolling statistics; `deque(maxlen=30)` for LSTM input windows) accumulate **continuously across the entire telemetry replay** (`train_train` → `val` → `test`). Monitor buffers are NEVER reset or purged at evaluation split boundaries. Live scoring begins as soon as the first window fills (row 1 for IF; row 29 for LSTM) and runs unbroken through the end of the stream.
+
+**Audit of M4b Blind-Spot Impact:** In Milestone 4b batch evaluation, carving regions strictly caused the first 29 rows of the test split to be excluded as NaN blind spots (D16). Under live continuous buffering (D23), these first 29 test rows have valid sliding-window context and receive real anomaly scores. We performed an empirical audit to determine if this discrepancy affected any test-side injections:
+- Out test cutoff: `2018-10-29 11:10:48`. First 29 test rows span `2018-10-30 00:21:00` to `2018-10-30 01:55:00`. Earliest test injection (`out_drift_009`) onset is `2018-10-30 01:59:00` (4 minutes *after* the initial 29 rows).
+- In test cutoff: `2018-10-29 11:10:48`. First 29 test rows span `2018-10-30 01:50:00` to `2018-10-30 05:28:00`. Earliest test injection (`in_drift_023`) onset is `2018-11-02 07:41:00` (days after the initial 29 rows).
+- **Result:** Exactly 0 of the 6 test-side injections fall within the initial 29-row transition window. Live alarm timestamps match batch evaluation 100% identically across all test injections.
+
+**Rationale:** A production digital twin monitoring live industrial sensor streams has no knowledge of offline academic train/val/test splits. Resetting rolling buffers at arbitrary timestamps would artificially introduce cold-start latency spikes and blind spots into operational monitoring.
+
+**Limitation:** Continuous buffering across the train/test boundary means the first 29 test predictions utilize inputs from the tail of the training period as historical context. However, because these inputs reflect observed past reality rather than future test data, this preserves strict causal time directionality ($t - k \rightarrow t$).
+
+---
+
 ## 2026-09-18 — D19: TRANSIT_LATENCY_SECONDS = 0.0 pass-through delay (Milestone 5a)
 
 **Decision:** A named constant `TRANSIT_LATENCY_SECONDS = 0.0` is added to `src/config.py`. In `src/digital_twin.py`, the `transit_process` applies `yield env.timeout(TRANSIT_LATENCY_SECONDS)` to every emitted reading event. With latency set to 0.0 s (disabled by default), the stage acts as a transparent pass-through pipe connecting Source to Destination.
