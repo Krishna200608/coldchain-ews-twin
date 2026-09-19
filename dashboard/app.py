@@ -435,19 +435,31 @@ if "Guided Tour" in mode:
         st.divider()
         c_c1, c_c2, c_c3, c_c4 = st.columns(4)
         with c_c1:
-            st.metric(label="Anomaly Onset", value=onset_ts.strftime("%Y-%m-%d %H:%M"))
+            st.metric(
+                label="Onset Time",
+                value=onset_ts.strftime("%H:%M:%S"),
+                delta=onset_ts.strftime("%Y-%m-%d"),
+                delta_color="off",
+                help=f"Full Anomaly Onset: {onset_ts.strftime('%Y-%m-%d %H:%M:%S')}",
+            )
         with c_c2:
-            st.metric(label="Anomaly Type", value=inj_type.capitalize())
+            st.metric(
+                label="Anomaly Type",
+                value=inj_type.capitalize(),
+                help=f"Synthetic Anomaly Type: {inj_type.capitalize()}",
+            )
         with c_c3:
             st.metric(
                 label="Baseline Alarm",
                 value=base_alarm_str.split(" ")[-1] if base_alarm_str != "None" else "No Alarm",
+                help=f"Baseline Alarm Timestamp: {base_alarm_str}",
             )
         with c_c4:
             st.metric(
                 label="IF Lead Time",
                 value=f"{if_lead_val:+.1f} min" if if_lead_val is not None else "N/A",
-                delta=f"Advantage vs Baseline" if (if_lead_val is not None and if_lead_val > 0) else None,
+                delta="Early warning" if (if_lead_val is not None and if_lead_val > 0) else None,
+                help=f"Isolation Forest Lead Time: {if_lead_val:+.1f} min relative to baseline" if if_lead_val is not None else "Isolation Forest did not alarm",
             )
 
 
@@ -467,19 +479,22 @@ l_fired = eval_slice[eval_slice["lstm_alarm"] == True]
 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 with col_m1:
     st.metric(
-        "Current Replay Time",
-        curr_ts.strftime("%Y-%m-%d %H:%M"),
-        f"Frame {current_frame + 1} / {total_frames}",
+        "Replay Time",
+        curr_ts.strftime("%H:%M:%S"),
+        curr_ts.strftime("%Y-%m-%d"),
+        delta_color="off",
+        help=f"Replay Timestamp: {curr_ts} (Frame {current_frame + 1} / {total_frames})",
     )
 with col_m2:
     delta_onset = (curr_ts - onset_ts).total_seconds() / 60.0
     st.metric(
         "Live Temperature",
         f"{curr_temp:.2f} °C",
-        f"{delta_onset:+.0f} min from onset",
+        f"{delta_onset:+.0f}m from onset",
+        help=f"Sensor reading at current playhead. Offset from onset: {delta_onset:+.1f} minutes",
     )
 with col_m3:
-    # Bug 3 fix: Shorten "Stream Status" value to avoid truncation, full description in help=
+    # Shorten "Stream Status" value to avoid truncation, full description in help=
     if onset_ts <= curr_ts <= end_ts:
         status_word = "Anomalous"
         status_help = f"Injection Active: {inj_type.upper()} ({onset_ts} to {end_ts})"
@@ -499,7 +514,7 @@ with col_m3:
 with col_m4:
     total_active_alarms = int(len(b_fired) > 0) + int(len(i_fired) > 0) + int(len(l_fired) > 0)
     st.metric(
-        "Active Model Alarms",
+        "Active Alarms",
         f"{total_active_alarms} / 3 Fired",
         f"Status: {status.upper()}",
         help=f"Number of distinct detectors that have fired at least once up to current playhead.",
@@ -507,7 +522,7 @@ with col_m4:
 
 st.markdown("---")
 
-# Bug 1 fix: Replace hand-rolled HTML strings with native st.metric primitives across all three cards
+# Replace hand-rolled HTML strings with native st.metric primitives across all three cards
 c_det1, c_det2, c_det3 = st.columns(3)
 
 with c_det1:
@@ -527,8 +542,9 @@ with c_det1:
             st.metric(
                 label="Lead Time (Early Warning)",
                 value=f"{effective_lead:.1f} min",
-                delta=f"Alarmed at {b_first_ts.strftime('%H:%M:%S')}",
+                delta=f"Alarm: {b_first_ts.strftime('%H:%M:%S')}",
                 delta_color="normal" if effective_lead > 0 else "off",
+                help=f"First baseline alarm fired at {b_first_ts}",
             )
         else:
             st.metric(
@@ -536,6 +552,7 @@ with c_det1:
                 value="No Alarm",
                 delta="Normal in window",
                 delta_color="off",
+                help="Baseline threshold not breached within evaluation window",
             )
 
 with c_det2:
@@ -555,8 +572,9 @@ with c_det2:
             st.metric(
                 label="Lead Time (Early Warning)",
                 value=f"{effective_lead:.1f} min",
-                delta=f"Alarmed at {i_first_ts.strftime('%H:%M:%S')}",
+                delta=f"Alarm: {i_first_ts.strftime('%H:%M:%S')}",
                 delta_color="normal" if effective_lead > 0 else "off",
+                help=f"First Isolation Forest alarm fired at {i_first_ts}",
             )
         else:
             st.metric(
@@ -564,6 +582,7 @@ with c_det2:
                 value="No Alarm",
                 delta="Normal in window",
                 delta_color="off",
+                help="Decision score remained >= 0.0 throughout evaluation window",
             )
 
 with c_det3:
@@ -583,15 +602,23 @@ with c_det3:
             st.metric(
                 label="Lead Time (Early Warning)",
                 value=f"{effective_lead:.1f} min",
-                delta=f"Alarmed at {l_first_ts.strftime('%H:%M:%S')}",
+                delta=f"Alarm: {l_first_ts.strftime('%H:%M:%S')}",
                 delta_color="normal" if effective_lead > 0 else ("inverse" if effective_lead < 0 else "off"),
+                help=f"First LSTM alarm fired at {l_first_ts}",
             )
         else:
+            if lstm_reason == "never_flagged":
+                reason_short = "Never flagged"
+            elif "excluded" in lstm_reason:
+                reason_short = "Excluded (Train)"
+            else:
+                reason_short = "No Alarm"
             st.metric(
                 label="Lead Time (Early Warning)",
                 value="No Alarm",
-                delta=f"Status: {lstm_reason}",
+                delta=reason_short,
                 delta_color="off",
+                help=f"Evaluation Status: {lstm_reason}",
             )
 
 
@@ -792,7 +819,19 @@ if all_active_alarms:
         df_alerts = df_alerts[df_alerts["Evaluation Window"] == "In Horizon"]
 
     df_alerts = df_alerts.sort_values("Timestamp", ascending=False).reset_index(drop=True)
-    st.dataframe(df_alerts, use_container_width=True, height=220)
+    st.dataframe(
+        df_alerts,
+        use_container_width=True,
+        height=220,
+        column_config={
+            "Timestamp": st.column_config.TextColumn("Timestamp", width="medium"),
+            "Detector": st.column_config.TextColumn("Detector", width="medium"),
+            "Telemetry (°C)": st.column_config.TextColumn("Telemetry (°C)", width="small"),
+            "Score": st.column_config.TextColumn("Score", width="small"),
+            "Threshold": st.column_config.TextColumn("Threshold", width="small"),
+            "Evaluation Window": st.column_config.TextColumn("Evaluation Window", width="medium"),
+        },
+    )
 else:
     st.info("No anomaly alarms triggered up to current replay position.", icon=":material/info:")
 
@@ -813,16 +852,48 @@ if status == "test":
             "This injection is part of the **6 out-of-sample test injections** representing the primary scientific benchmark. "
             "All streaming alarms produced by the Digital Twin are verified against the frozen batch evaluations from Milestones 2, 3, and 4b."
         )
-        st.dataframe(
-            m5b_report[["detector", "live_alarm_timestamp", "batch_alarm_timestamp", "match", "notes"]],
-            use_container_width=True,
-            hide_index=True,
-        )
     with c_audit2:
         if all_matched:
             st.success("100% BIT-EXACT MATCH\n\nAll 3 live detectors match frozen Milestone 2/3/4b evaluations exactly.", icon=":material/verified:")
         else:
             st.warning("Cross-check review required.", icon=":material/warning:")
+
+    # Map long verification strings to concise in-table summaries to prevent canvas truncation
+    def _summarize_audit_notes(note_str: str) -> str:
+        s = str(note_str)
+        if "whole-series" in s:
+            return "Exact match (M2 whole-series threshold, D24)"
+        if "M3 batch test" in s:
+            return "Exact match (M3 batch test evaluation)"
+        if "M4b batch test" in s:
+            return "Exact match (M4b batch test, unaffected by D23)"
+        if "never flagged" in s:
+            return "Exact match (never flagged in window)"
+        return s
+
+    m5b_display = m5b_report.copy()
+    m5b_display["notes_summary"] = m5b_display["notes"].apply(_summarize_audit_notes)
+
+    # Full container width table with concise notes and unconstrained column to fill width
+    st.dataframe(
+        m5b_display[["detector", "live_alarm_timestamp", "batch_alarm_timestamp", "match", "notes_summary"]],
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "detector": st.column_config.TextColumn("Detector", width="small"),
+            "live_alarm_timestamp": st.column_config.TextColumn("Live Alarm", width="medium"),
+            "batch_alarm_timestamp": st.column_config.TextColumn("Batch Alarm", width="medium"),
+            "match": st.column_config.CheckboxColumn("Exact Match", width="small"),
+            "notes_summary": st.column_config.TextColumn(
+                "Verification Notes",
+                help="Concise verification summary against frozen batch baseline (see expander below for full scientific protocol detail)",
+            ),
+        },
+    )
+
+    with st.expander("Detailed Verification Notes & Scientific Protocol Context (D23, D24, D26)", expanded=False):
+        for _, r in m5b_report.iterrows():
+            st.markdown(f"- **{r['detector'].upper()}**: {r['notes']}")
 else:
     st.markdown(
         f"**Injection `{selected_inj_id}` is a training-region deployment demonstration (D26/D31).**<br>"
