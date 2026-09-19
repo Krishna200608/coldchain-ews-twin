@@ -1,7 +1,7 @@
 """
 dashboard/app.py
 ================
-Live Digital Twin Early Warning System Dashboard (Milestone 6).
+Live Digital Twin Early Warning System Dashboard (Milestone 6.1).
 Streamlit presentation-grade interactive dashboard for instructor/viva demonstrations.
 
 STRUCTURAL PROXY NOTICE (D31):
@@ -54,75 +54,9 @@ DATA_DIR = REPO_ROOT / "data" / "processed"
 # Page configuration
 st.set_page_config(
     page_title="Cold Chain EWS Digital Twin",
-    page_icon="❄️",
+    page_icon=":material/ac_unit:",
     layout="wide",
     initial_sidebar_state="expanded",
-)
-
-# Custom CSS styling for presentation-grade UI
-st.markdown(
-    """
-    <style>
-    .proxy-banner {
-        background-color: #fff3cd;
-        border-left: 5px solid #ffc107;
-        padding: 12px 16px;
-        border-radius: 4px;
-        color: #856404;
-        font-size: 0.88rem;
-        margin-bottom: 1rem;
-    }
-    .demo-banner {
-        background-color: #d1ecf1;
-        border-left: 5px solid #17a2b8;
-        padding: 10px 14px;
-        border-radius: 4px;
-        color: #0c5460;
-        font-size: 0.85rem;
-        margin-bottom: 1rem;
-    }
-    .metric-card {
-        background: #fdfdfd;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 14px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .badge-normal {
-        background-color: #e2e8f0;
-        color: #475569;
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.78rem;
-        font-weight: 600;
-    }
-    .badge-alarm {
-        background-color: #fee2e2;
-        color: #b91c1c;
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.78rem;
-        font-weight: 600;
-    }
-    .badge-lead {
-        background-color: #dcfce7;
-        color: #15803d;
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.78rem;
-        font-weight: 600;
-    }
-    .tour-caption-box {
-        background-color: #f8fafc;
-        border: 1px solid #cbd5e1;
-        border-left: 4px solid #3b82f6;
-        border-radius: 6px;
-        padding: 14px 18px;
-        margin-bottom: 1.2rem;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
 )
 
 
@@ -152,7 +86,7 @@ def run_d32_startup_check() -> list[str]:
 
 missing_artifacts = run_d32_startup_check()
 if missing_artifacts:
-    st.error("### 🛑 Startup Artifact Verification Failed (D32)")
+    st.error("Startup Artifact Verification Failed (D32)", icon=":material/error:")
     st.markdown(
         f"The following required model or data artifacts were not found:\n"
         + "".join([f"- `{m}`\n" for m in missing_artifacts])
@@ -163,7 +97,8 @@ if missing_artifacts:
         "```bash\n"
         "python src/twin_monitors.py\n"
         "python src/twin_crosscheck.py\n"
-        "```"
+        "```",
+        icon=":material/info:",
     )
     st.stop()
 
@@ -290,61 +225,57 @@ merged_injections, status_df, three_way_df, crosscheck_df = load_all_metadata()
 
 # ══ UI Header & Persistent Disclaimers ═════════════════════════════════════════
 
-st.title("❄️ Cold Chain EWS — Live Digital Twin Anomaly Monitor")
+st.title(":material/ac_unit: Cold Chain EWS — Live Digital Twin Anomaly Monitor")
 st.markdown(
     "**A presentation-grade streaming early warning demonstration comparing Naive Baseline, "
     "Isolation Forest, and LSTM-Autoencoder anomaly detection.**"
 )
 
 # D31: Persistent Structural Proxy Disclaimer Banner
-st.markdown(
-    """
-    <div class="proxy-banner">
-        ⚠️ <strong>STRUCTURAL PROXY NOTICE</strong>: All telemetry derives from <code>IOT-temp.csv</code> 
-        (generic IoT temperature sensor log), <strong>NOT</strong> refrigerated-transport operations. 
-        All injected anomalies are synthetic proxy constructs. Detectors carry no food-safety significance. 
-        See <code>docs/AD_LOG.md</code> (D1–D34).
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.warning(
+    "**STRUCTURAL PROXY NOTICE**: All telemetry derives from `IOT-temp.csv` "
+    "(generic IoT temperature sensor log), **NOT** refrigerated-transport operations. "
+    "All injected anomalies are synthetic proxy constructs. Detectors carry no food-safety significance. "
+    "See `docs/AD_LOG.md` (D1–D34).",
+    icon=":material/warning:",
 )
 
 
 # ══ Sidebar Controls ═══════════════════════════════════════════════════════════
 
-st.sidebar.header("🕹️ Replay Navigation")
+st.sidebar.header("Replay Navigation", icon=":material/navigation:")
 
 mode = st.sidebar.radio(
     "Select Operating Mode",
-    ["🎯 Guided Tour (Viva Showcase)", "🔍 Free Explore (All 30 Injections)"],
+    [":material/tour: Guided Tour (Viva Showcase)", ":material/explore: Free Explore (All 30 Injections)"],
     index=0,
 )
 
-# 4 Showcase Steps for Guided Tour (All out-of-sample test comparisons)
+# Bug 3 fix: Shorten Guided Tour labels so they fit without mid-word truncation
 GUIDED_TOUR_STEPS = [
     {
         "id": "out_step_001",
-        "label": "1. out_step_001 (Step Anomaly — Synchronous 0-min lead time)",
+        "label": "1. out_step_001 — Step",
         "summary": "Step Anomaly: Catastrophic jump triggers all 3 models synchronously at onset.",
     },
     {
         "id": "out_drift_009",
-        "label": "2. out_drift_009 (Thermal Drift — IF +64.0 min lead vs LSTM -14.0 min lag)",
+        "label": "2. out_drift_009 — Drift",
         "summary": "Thermal Drift: Multivariate early warning lead vs sequence memory inertia lag.",
     },
     {
         "id": "out_flatline_013",
-        "label": "3. out_flatline_013 (In-Range Flatline — Baseline complete blind spot)",
+        "label": "3. out_flatline_013 — Flatline",
         "summary": "In-Range Flatline: Zero variance failure for Baseline, subtle detection by IF.",
     },
     {
         "id": "in_drift_023",
-        "label": "4. in_drift_023 (Inbound Thermal Drift — Multi-Model Early Warning)",
+        "label": "4. in_drift_023 — Drift",
         "summary": "Inbound Drift: IF achieves +11.0 min early warning prior to baseline crossing.",
     },
 ]
 
-if mode.startswith("🎯 Guided Tour"):
+if "Guided Tour" in mode:
     step_labels = [s["label"] for s in GUIDED_TOUR_STEPS]
     selected_label = st.sidebar.selectbox("Guided Tour Showcase Step", step_labels, index=0)
     selected_step = next(s for s in GUIDED_TOUR_STEPS if s["label"] == selected_label)
@@ -357,8 +288,8 @@ else:
         filtered_injs = filtered_injs[filtered_injs["series"] == series_filter]
 
     def format_inj_option(row):
-        status_tag = "TEST (Out-of-sample)" if row["train_test_status"] == "test" else "TRAIN (Demo Only)"
-        return f"{row['injection_id']} | {row['series']} {row['type']} | [{status_tag}]"
+        status_tag = "TEST" if row["train_test_status"] == "test" else "TRAIN DEMO"
+        return f"{row['injection_id']} | {row['series']} {row['type']} [{status_tag}]"
 
     inj_options = list(filtered_injs["injection_id"])
     selected_inj_id = st.sidebar.selectbox(
@@ -380,16 +311,12 @@ horizon_end_ts = end_ts + pd.Timedelta(minutes=SEARCH_HORIZON_MINUTES)
 
 # D31: Demo banner for train-side injections
 if status == "train":
-    st.markdown(
-        """
-        <div class="demo-banner">
-            ℹ️ <strong>DEMO ONLY — Prior Training Exposure (D26/D31)</strong>: 
-            This injection occurred during the training time range (<code>ts < cutoff_ts</code>). 
-            Its live detection is demonstrated strictly as an interactive deployment preview, 
-            <strong>not</strong> as an out-of-sample scientific performance claim.
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.info(
+        "**DEMO ONLY — Prior Training Exposure (D26/D31)**: "
+        "This injection occurred during the training time range (`ts < cutoff_ts`). "
+        "Its live detection is demonstrated strictly as an interactive deployment preview, "
+        "**not** as an out-of-sample scientific performance claim.",
+        icon=":material/info:",
     )
 
 
@@ -401,7 +328,7 @@ win_end_ts = horizon_end_ts + pd.Timedelta(hours=padding_hours)
 
 win_indices = df_stream[(df_stream["ts"] >= win_start_ts) & (df_stream["ts"] <= win_end_ts)].index
 if len(win_indices) == 0:
-    st.error(f"No telemetry readings found in window {win_start_ts} to {win_end_ts}")
+    st.error(f"No telemetry readings found in window {win_start_ts} to {win_end_ts}", icon=":material/error:")
     st.stop()
 
 win_start_idx = int(win_indices[0])
@@ -415,26 +342,25 @@ total_frames = len(sim_df)
 # ══ Playback Controls (D28) ════════════════════════════════════════════════════
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("⏱️ Playback Controls")
-st.sidebar.caption("Playback speed is display-only and never alters telemetry values fed to models (D28).")
+st.sidebar.subheader("Playback Controls", icon=":material/speed:")
 
 # Session state for playback position
 session_key = f"playhead_{selected_inj_id}"
 if session_key not in st.session_state:
     st.session_state[session_key] = total_frames - 1  # Default to full window viewed
 
-c_play, c_pause, c_reset, c_end = st.sidebar.columns(4)
-is_playing = False
-if c_reset.button("⏮️", help="Reset to Start"):
+c_reset, c_end = st.sidebar.columns(2)
+if c_reset.button("Start", icon=":material/first_page:", use_container_width=True, help="Reset to Start of Window"):
     st.session_state[session_key] = 0
-if c_end.button("⏭️", help="Jump to End"):
+if c_end.button("End", icon=":material/last_page:", use_container_width=True, help="Jump to End of Window"):
     st.session_state[session_key] = total_frames - 1
 
-# Playback speed slider
+# Bug 4 fix: Remove separate caption and pass D28 explanation directly via help= tooltip
 replay_speed = st.sidebar.select_slider(
     "Replay Speed Factor",
     options=["1x", "5x", "10x", "25x", "Instant"],
     value="Instant",
+    help="Playback speed is display-only and never alters telemetry values fed to models (D28).",
 )
 
 current_frame = st.sidebar.slider(
@@ -447,7 +373,7 @@ current_frame = st.sidebar.slider(
 st.session_state[session_key] = current_frame
 
 
-# ══ D34 Dynamic Guided Tour Captions ═══════════════════════════════════════════
+# ══ D34 Dynamic Guided Tour Captions (Bug 2 Fix) ═══════════════════════════════
 
 # Fetch values dynamically from three_way_comparison.csv and twin_crosscheck_report.csv
 tw_match = three_way_df[three_way_df["injection_id"] == selected_inj_id]
@@ -464,47 +390,65 @@ lstm_reason = str(tw_row["lstm_evaluation_reason"]) if tw_row is not None and pd
 clean_thresh = get_clean_baseline_threshold(series)
 lstm_thresh_val = 1.010091 if series == "Out" else 1.512753
 
-if mode.startswith("🎯 Guided Tour"):
-    caption_md = ""
-    if selected_inj_id == "out_step_001":
-        caption_md = f"""
-        <strong>Showcase 1: Unambiguous Step Anomaly (Catastrophic Failure Anchor)</strong><br>
-        A sudden +12.0 °C step displacement occurs at <code>{onset_ts}</code>. 
-        All three detectors trigger synchronously at the very first post-onset reading at 
-        <code>{base_alarm_str}</code> with an identical lead time of <strong>{base_lead_val:.1f} minutes</strong>.
-        This confirms zero latency divergence under gross, catastrophic system breaches.
-        """
-    elif selected_inj_id == "out_drift_009":
-        caption_md = f"""
-        <strong>Showcase 2: Incipient Thermal Drift (Early Warning vs. Sequence Lag)</strong><br>
-        Under gradual thermal drift (+0.03 °C/min), the Naive Baseline remains blind until upper limit crossing at 
-        <code>{base_alarm_str}</code> (lead time: <strong>{base_lead_val:.1f} min</strong>).<br>
-        Isolation Forest flags multivariate anomalies early at <code>{if_alarm_str}</code>, providing a 
-        vital early warning advantage of <strong>+{if_lead_val:.1f} minutes</strong>.<br>
-        In contrast, LSTM-Autoencoder triggers at <code>{lstm_alarm_str}</code> with a lead time of 
-        <strong>{lstm_lead_val:.1f} minutes</strong> (a <strong>{abs(lstm_lead_val):.1f}-minute lag</strong> relative to baseline crossing),
-        illustrating autoencoder sequence inertia during creeping, low-slope drift.
-        """
-    elif selected_inj_id == "out_flatline_013":
-        caption_md = f"""
-        <strong>Showcase 3: Flatline Within Normal Temperature Bounds (Baseline Blind Spot)</strong><br>
-        The sensor value freezes at ~37.3 °C, entirely inside normal operating temperatures. 
-        Because the value never exceeds the clean threshold (<code>{clean_thresh:.2f} °C</code>), the Naive Baseline 
-        <strong>completely fails to alarm</strong> (alarm: <code>{base_alarm_str}</code>).<br>
-        Isolation Forest captures the unnatural collapse in rolling variance and alarms at <code>{if_alarm_str}</code>.<br>
-        LSTM reconstruction error remains below threshold (<code>{lstm_thresh_val:.4f}</code>), resulting in 
-        <code>{lstm_reason}</code>.
-        """
-    elif selected_inj_id == "in_drift_023":
-        caption_md = f"""
-        <strong>Showcase 4: Inbound Thermal Drift (Multi-Model Validation)</strong><br>
-        Inbound sensor drift beginning at <code>{onset_ts}</code>. 
-        Isolation Forest alarms early at <code>{if_alarm_str}</code> giving 
-        <strong>+{if_lead_val:.1f} minutes</strong> early warning.<br>
-        Both Naive Baseline and LSTM-Autoencoder trigger synchronously when temperature crosses the upper threshold at 
-        <code>{base_alarm_str}</code> (lead time: <strong>{base_lead_val:.1f} minutes</strong>).
-        """
-    st.markdown(f'<div class="tour-caption-box">{caption_md}</div>', unsafe_allow_html=True)
+# Bug 2 fix: Rebuilt container with st.container(border=True), plain st.markdown, and st.columns below
+if "Guided Tour" in mode:
+    with st.container(border=True):
+        if selected_inj_id == "out_step_001":
+            st.markdown("### Showcase 1: Unambiguous Step Anomaly (Catastrophic Failure Anchor)")
+            st.markdown(
+                f"A sudden +12.0 °C step displacement occurs at `{onset_ts}`. "
+                f"All three detectors trigger synchronously at the very first post-onset reading at "
+                f"`{base_alarm_str}` with an identical lead time of **{base_lead_val:.1f} minutes**. "
+                f"This confirms zero latency divergence under gross, catastrophic system breaches."
+            )
+        elif selected_inj_id == "out_drift_009":
+            st.markdown("### Showcase 2: Incipient Thermal Drift (Early Warning vs. Sequence Lag)")
+            st.markdown(
+                f"Under gradual thermal drift (+0.03 °C/min), the Naive Baseline remains blind until upper limit crossing at "
+                f"`{base_alarm_str}` (lead time: **{base_lead_val:.1f} min**). "
+                f"Isolation Forest flags multivariate anomalies early at `{if_alarm_str}`, providing a "
+                f"vital early warning advantage of **+{if_lead_val:.1f} minutes**. "
+                f"In contrast, LSTM-Autoencoder triggers at `{lstm_alarm_str}` with a lead time of "
+                f"**{lstm_lead_val:.1f} minutes** (a **{abs(lstm_lead_val):.1f}-minute lag** relative to baseline crossing), "
+                f"illustrating autoencoder sequence inertia during creeping, low-slope drift."
+            )
+        elif selected_inj_id == "out_flatline_013":
+            st.markdown("### Showcase 3: Flatline Within Normal Temperature Bounds (Baseline Blind Spot)")
+            st.markdown(
+                f"The sensor value freezes at ~37.3 °C, entirely inside normal operating temperatures. "
+                f"Because the value never exceeds the clean threshold (`{clean_thresh:.2f} °C`), the Naive Baseline "
+                f"**completely fails to alarm** (alarm: `{base_alarm_str}`). "
+                f"Isolation Forest captures the unnatural collapse in rolling variance and alarms at `{if_alarm_str}`. "
+                f"LSTM reconstruction error remains below threshold (`{lstm_thresh_val:.4f}`), resulting in "
+                f"`{lstm_reason}`."
+            )
+        elif selected_inj_id == "in_drift_023":
+            st.markdown("### Showcase 4: Inbound Thermal Drift (Multi-Model Validation)")
+            st.markdown(
+                f"Inbound sensor drift beginning at `{onset_ts}`. "
+                f"Isolation Forest alarms early at `{if_alarm_str}` giving "
+                f"**+{if_lead_val:.1f} minutes** early warning. "
+                f"Both Naive Baseline and LSTM-Autoencoder trigger synchronously when temperature crosses the upper threshold at "
+                f"`{base_alarm_str}` (lead time: **{base_lead_val:.1f} minutes**)."
+            )
+
+        st.divider()
+        c_c1, c_c2, c_c3, c_c4 = st.columns(4)
+        with c_c1:
+            st.metric(label="Anomaly Onset", value=onset_ts.strftime("%Y-%m-%d %H:%M"))
+        with c_c2:
+            st.metric(label="Anomaly Type", value=inj_type.capitalize())
+        with c_c3:
+            st.metric(
+                label="Baseline Alarm",
+                value=base_alarm_str.split(" ")[-1] if base_alarm_str != "None" else "No Alarm",
+            )
+        with c_c4:
+            st.metric(
+                label="IF Lead Time",
+                value=f"{if_lead_val:+.1f} min" if if_lead_val is not None else "N/A",
+                delta=f"Advantage vs Baseline" if (if_lead_val is not None and if_lead_val > 0) else None,
+            )
 
 
 # ══ Current Telemetry & Detector Cards ═════════════════════════════════════════
@@ -535,68 +479,126 @@ with col_m2:
         f"{delta_onset:+.0f} min from onset",
     )
 with col_m3:
-    inj_phase = "Normal Telemetry"
+    # Bug 3 fix: Shorten "Stream Status" value to avoid truncation, full description in help=
     if onset_ts <= curr_ts <= end_ts:
-        inj_phase = f"⚠️ INJECTION ACTIVE ({inj_type.upper()})"
+        status_word = "Anomalous"
+        status_help = f"Injection Active: {inj_type.upper()} ({onset_ts} to {end_ts})"
     elif end_ts < curr_ts <= horizon_end_ts:
-        inj_phase = "⏱️ SEARCH HORIZON"
-    st.metric("Stream Status", inj_phase, f"Series: {series}")
+        status_word = "Horizon"
+        status_help = f"Evaluation Search Horizon Active ({SEARCH_HORIZON_MINUTES:.0f}m past end)"
+    else:
+        status_word = "Normal"
+        status_help = "Baseline streaming telemetry without active injection"
+
+    st.metric(
+        "Stream Status",
+        status_word,
+        f"Series: {series}",
+        help=status_help,
+    )
 with col_m4:
     total_active_alarms = int(len(b_fired) > 0) + int(len(i_fired) > 0) + int(len(l_fired) > 0)
-    st.metric("Active Model Alarms", f"{total_active_alarms} / 3 Fired", f"Status: {status.upper()}")
+    st.metric(
+        "Active Model Alarms",
+        f"{total_active_alarms} / 3 Fired",
+        f"Status: {status.upper()}",
+        help=f"Number of distinct detectors that have fired at least once up to current playhead.",
+    )
 
 st.markdown("---")
 
-# 3-Column Detector Comparison Cards
+# Bug 1 fix: Replace hand-rolled HTML strings with native st.metric primitives across all three cards
 c_det1, c_det2, c_det3 = st.columns(3)
 
 with c_det1:
-    b_first_ts = b_fired.iloc[0]["ts"] if not b_fired.empty else None
-    b_lead = (end_ts - b_first_ts).total_seconds() / 60.0 if b_first_ts is not None else None
-    b_badge = '<span class="badge-alarm">🚨 ALARM FIRED</span>' if b_first_ts else '<span class="badge-normal">⚪ MONITORING</span>'
-    st.markdown(f"#### Naive Baseline {b_badge}", unsafe_allow_html=True)
-    st.markdown(f"**Score / Value:** `{curr_temp:.2f} °C`")
-    st.markdown(f"**Static Threshold:** `{clean_thresh:.2f} °C` (whole-series clean)")
-    if b_first_ts:
-        st.markdown(f"**Earliest Alarm:** `{b_first_ts.strftime('%H:%M:%S')}`")
-        st.markdown(f"**Lead Time:** `{base_lead_val if base_lead_val is not None else b_lead:.1f} min`")
-    else:
-        st.markdown("**Earliest Alarm:** _None in window_")
-        st.markdown("**Lead Time:** _N/A_")
+    with st.container(border=True):
+        st.subheader("Naive Baseline", icon=":material/rule:")
+        b_first_ts = b_fired.iloc[0]["ts"] if not b_fired.empty else None
+        b_lead = (end_ts - b_first_ts).total_seconds() / 60.0 if b_first_ts is not None else None
+
+        st.metric(
+            label="Current Telemetry",
+            value=f"{curr_temp:.2f} °C",
+            delta=f"Threshold: {clean_thresh:.2f} °C",
+            delta_color="off",
+        )
+        if b_first_ts:
+            effective_lead = base_lead_val if base_lead_val is not None else b_lead
+            st.metric(
+                label="Lead Time (Early Warning)",
+                value=f"{effective_lead:.1f} min",
+                delta=f"Alarmed at {b_first_ts.strftime('%H:%M:%S')}",
+                delta_color="normal" if effective_lead > 0 else "off",
+            )
+        else:
+            st.metric(
+                label="Lead Time (Early Warning)",
+                value="No Alarm",
+                delta="Normal in window",
+                delta_color="off",
+            )
 
 with c_det2:
-    i_first_ts = i_fired.iloc[0]["ts"] if not i_fired.empty else None
-    i_lead = (end_ts - i_first_ts).total_seconds() / 60.0 if i_first_ts is not None else None
-    i_badge = '<span class="badge-alarm">🚨 ALARM FIRED</span>' if i_first_ts else '<span class="badge-normal">⚪ MONITORING</span>'
-    st.markdown(f"#### Isolation Forest {i_badge}", unsafe_allow_html=True)
-    st.markdown(f"**Score (Decision):** `{current_reading['if_score']:.4f}`")
-    st.markdown(f"**Anomaly Threshold:** `< 0.0000` (multivariate)")
-    if i_first_ts:
-        st.markdown(f"**Earliest Alarm:** `{i_first_ts.strftime('%H:%M:%S')}`")
-        st.markdown(f"**Lead Time:** `<span class='badge-lead'>+{if_lead_val if if_lead_val is not None else i_lead:.1f} min</span>`", unsafe_allow_html=True)
-    else:
-        st.markdown("**Earliest Alarm:** _None in window_")
-        st.markdown("**Lead Time:** _N/A_")
+    with st.container(border=True):
+        st.subheader("Isolation Forest", icon=":material/forest:")
+        i_first_ts = i_fired.iloc[0]["ts"] if not i_fired.empty else None
+        i_lead = (end_ts - i_first_ts).total_seconds() / 60.0 if i_first_ts is not None else None
+
+        st.metric(
+            label="Decision Score",
+            value=f"{current_reading['if_score']:.4f}",
+            delta="Threshold: < 0.0000",
+            delta_color="off",
+        )
+        if i_first_ts:
+            effective_lead = if_lead_val if if_lead_val is not None else i_lead
+            st.metric(
+                label="Lead Time (Early Warning)",
+                value=f"{effective_lead:.1f} min",
+                delta=f"Alarmed at {i_first_ts.strftime('%H:%M:%S')}",
+                delta_color="normal" if effective_lead > 0 else "off",
+            )
+        else:
+            st.metric(
+                label="Lead Time (Early Warning)",
+                value="No Alarm",
+                delta="Normal in window",
+                delta_color="off",
+            )
 
 with c_det3:
-    l_first_ts = l_fired.iloc[0]["ts"] if not l_fired.empty else None
-    l_lead = (end_ts - l_first_ts).total_seconds() / 60.0 if l_first_ts is not None else None
-    l_badge = '<span class="badge-alarm">🚨 ALARM FIRED</span>' if l_first_ts else '<span class="badge-normal">⚪ MONITORING</span>'
-    st.markdown(f"#### LSTM-Autoencoder {l_badge}", unsafe_allow_html=True)
-    st.markdown(f"**Score (Reconstruction MSE):** `{current_reading['lstm_score']:.4f}`")
-    st.markdown(f"**Calibrated Threshold:** `≥ {lstm_thresh_val:.4f}` (D13)")
-    if l_first_ts:
-        st.markdown(f"**Earliest Alarm:** `{l_first_ts.strftime('%H:%M:%S')}`")
-        lead_display = f"{lstm_lead_val if lstm_lead_val is not None else l_lead:.1f} min"
-        st.markdown(f"**Lead Time:** `{lead_display}`")
-    else:
-        st.markdown("**Earliest Alarm:** _None in window_")
-        st.markdown(f"**Lead Time:** `{lstm_reason}`")
+    with st.container(border=True):
+        st.subheader("LSTM-Autoencoder", icon=":material/memory:")
+        l_first_ts = l_fired.iloc[0]["ts"] if not l_fired.empty else None
+        l_lead = (end_ts - l_first_ts).total_seconds() / 60.0 if l_first_ts is not None else None
+
+        st.metric(
+            label="Reconstruction MSE",
+            value=f"{current_reading['lstm_score']:.4f}",
+            delta=f"Threshold: ≥ {lstm_thresh_val:.4f}",
+            delta_color="off",
+        )
+        if l_first_ts:
+            effective_lead = lstm_lead_val if lstm_lead_val is not None else l_lead
+            st.metric(
+                label="Lead Time (Early Warning)",
+                value=f"{effective_lead:.1f} min",
+                delta=f"Alarmed at {l_first_ts.strftime('%H:%M:%S')}",
+                delta_color="normal" if effective_lead > 0 else ("inverse" if effective_lead < 0 else "off"),
+            )
+        else:
+            st.metric(
+                label="Lead Time (Early Warning)",
+                value="No Alarm",
+                delta=f"Status: {lstm_reason}",
+                delta_color="off",
+            )
 
 
 # ══ Interactive Altair Telemetry & Alarm Trajectory Chart ══════════════════════
 
-st.markdown("### 📈 Live Streaming Telemetry & Alarm Horizon")
+st.markdown("---")
+st.subheader("Live Streaming Telemetry & Alarm Horizon", icon=":material/timeline:")
 
 # Base line chart of temperature
 base_chart = alt.Chart(sim_df).encode(
@@ -680,17 +682,16 @@ for al in alarm_layers:
 
 st.altair_chart(chart.properties(height=360), use_container_width=True)
 
-# Legend annotations
 st.caption(
-    "🔶 **Orange Band**: Injection Duration | 🟪 **Purple Band**: Evaluation Search Horizon (60m) | "
-    "🔴 **Red Triangles**: Baseline Alarms | 🟢 **Green Squares**: Isolation Forest Alarms | "
-    "🔵 **Blue Circles**: LSTM-Autoencoder Alarms | 🟦 **Dashed Blue Line**: Replay Playhead"
+    "Visual Legend: Orange Band = Injection Duration | Purple Band = Search Horizon (60 min) | "
+    "Red Triangles = Baseline Alarms | Green Squares = Isolation Forest Alarms | "
+    "Blue Circles = LSTM-Autoencoder Alarms | Dashed Blue Line = Current Playhead"
 )
 
 
 # ══ Secondary Score Diagnostics Panel ══════════════════════════════════════════
 
-with st.expander("📊 Inspect Live Anomaly Score Trajectories (IF Decision vs. LSTM MSE)"):
+with st.expander("Inspect Live Anomaly Score Trajectories (IF Decision vs. LSTM MSE)", icon=":material/monitoring:"):
     c_diag1, c_diag2 = st.columns(2)
     with c_diag1:
         if_chart = (
@@ -719,9 +720,10 @@ with st.expander("📊 Inspect Live Anomaly Score Trajectories (IF Decision vs. 
         st.caption(f"LSTM Reconstruction Error MSE (D13 Threshold: {lstm_thresh_val:.4f})")
 
 
-# ══ Real-Time Alert Log ════════════════════════════════════════════════════════
+# ══ Real-Time Alert Log (Bug 5 Audit & Fix) ════════════════════════════════════
 
-st.markdown("### 📋 Live Streaming Alert Log")
+st.markdown("---")
+st.subheader("Live Streaming Alert Log", icon=":material/list_alt:")
 
 all_active_alarms = []
 for _, r in active_slice.iterrows():
@@ -755,17 +757,50 @@ for _, r in active_slice.iterrows():
             "Evaluation Window": "In Horizon" if onset_ts <= t_stamp <= horizon_end_ts else "Outside Horizon",
         })
 
+# Bug 5 fix: Add filter controls and explicit distribution legend
+c_filt1, c_filt2 = st.columns([2, 2])
+with c_filt1:
+    detector_filter = st.selectbox(
+        "Filter by Detector",
+        ["All Detectors", "Naive Baseline", "Isolation Forest", "LSTM-Autoencoder"],
+        index=0,
+    )
+with c_filt2:
+    window_filter = st.selectbox(
+        "Filter by Window",
+        ["All Window Readings", "Within Search Horizon Only"],
+        index=0,
+    )
+
 if all_active_alarms:
-    df_alerts = pd.DataFrame(all_active_alarms).sort_values("Timestamp", ascending=False).reset_index(drop=True)
+    df_alerts = pd.DataFrame(all_active_alarms)
+
+    # Compute detector counts
+    n_base = int((df_alerts["Detector"] == "Naive Baseline").sum())
+    n_if = int((df_alerts["Detector"] == "Isolation Forest").sum())
+    n_lstm = int((df_alerts["Detector"] == "LSTM-Autoencoder").sum())
+
+    st.caption(
+        f":material/info: **Alert Distribution up to Playhead:** "
+        f"Naive Baseline: **{n_base}** | Isolation Forest: **{n_if}** | LSTM-Autoencoder: **{n_lstm}**. "
+        f"(Isolation Forest triggers frequently due to its known higher anomaly sensitivity / false-positive profile from M3)."
+    )
+
+    if detector_filter != "All Detectors":
+        df_alerts = df_alerts[df_alerts["Detector"] == detector_filter]
+    if window_filter == "Within Search Horizon Only":
+        df_alerts = df_alerts[df_alerts["Evaluation Window"] == "In Horizon"]
+
+    df_alerts = df_alerts.sort_values("Timestamp", ascending=False).reset_index(drop=True)
     st.dataframe(df_alerts, use_container_width=True, height=220)
 else:
-    st.info("No anomaly alarms triggered up to current replay position.")
+    st.info("No anomaly alarms triggered up to current replay position.", icon=":material/info:")
 
 
 # ══ Scientific Cross-Check Verification Audit (Footer) ═════════════════════════
 
 st.markdown("---")
-st.subheader("🛡️ Milestone 5b Cross-Check Verification Audit")
+st.subheader("Milestone 5b Cross-Check Verification Audit", icon=":material/fact_check:")
 
 if status == "test":
     # Filter cross-check report for this injection
@@ -785,9 +820,9 @@ if status == "test":
         )
     with c_audit2:
         if all_matched:
-            st.success("✅ **100% BIT-EXACT MATCH**\n\nAll 3 live detectors match frozen Milestone 2/3/4b evaluations exactly.")
+            st.success("100% BIT-EXACT MATCH\n\nAll 3 live detectors match frozen Milestone 2/3/4b evaluations exactly.", icon=":material/verified:")
         else:
-            st.warning("⚠️ Cross-check review required.")
+            st.warning("Cross-check review required.", icon=":material/warning:")
 else:
     st.markdown(
         f"**Injection `{selected_inj_id}` is a training-region deployment demonstration (D26/D31).**<br>"
