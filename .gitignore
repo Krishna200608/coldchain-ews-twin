@@ -15,10 +15,17 @@ data/processed/*.csv
 !data/processed/twin_replay_log_out.csv
 !data/processed/twin_replay_log_in.csv
 !data/processed/twin_crosscheck_report.csv
+# Whitelist processed datasets required by digital twin & dashboard (D32)
+!data/processed/out_features.csv
+!data/processed/in_features.csv
+!data/processed/out_labeled.csv
+!data/processed/in_labeled.csv
 
-# ── Models (allow trained H5 weights) ─────────────────────────────────────────
+# ── Models (allow trained H5 weights and Isolation Forest models for D32) ──────
 models/*.joblib
 !models/*.h5
+!models/isolation_forest_out.joblib
+!models/isolation_forest_in.joblib
 
 
 # ── Python artefacts ───────────────────────────────────────────────────────────
