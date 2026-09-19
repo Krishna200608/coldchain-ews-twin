@@ -1,8 +1,8 @@
 """
 dashboard/app.py
 ================
-Live Digital Twin Early Warning System Dashboard (Milestone 6.1).
-Streamlit presentation-grade interactive dashboard for instructor/viva demonstrations.
+Live Digital Twin Early Warning System Dashboard (Milestone 6.3).
+Thin presentation-grade application entry point and layout orchestration.
 
 STRUCTURAL PROXY NOTICE (D31):
 ------------------------------
@@ -16,7 +16,7 @@ DESIGN DECISIONS HONORED:
        src.twin_monitors and exact sorting from src.digital_twin.
 - D28: Accelerated replay; playback speed is display-only and never alters telemetry.
 - D29: Two modes: Guided Tour (4 test-side showcase steps) and Free Explore (all 30 injections).
-- D30: Streamlit framework in dashboard/app.py.
+- D30: Streamlit framework in modular dashboard/ architecture.
 - D31: Persistent structural proxy disclaimer banner + train-side demo banner.
 - D32: Startup check verifying models and data artifacts before replay.
 - D33: Mandatory silent buffer pre-warming with preceding 10 (IF) and 30 (LSTM) readings.
@@ -26,69 +26,67 @@ DESIGN DECISIONS HONORED:
 
 from __future__ import annotations
 
-import json
-import pathlib
-import sys
-import time
-from typing import Any
-
-import altair as alt
-import numpy as np
 import pandas as pd
 import streamlit as st
 
-# Ensure repository root and src directory are on sys.path
-REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-SRC_DIR = REPO_ROOT / "src"
-sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(SRC_DIR))
+from dashboard.constants import (
+    GUIDED_TOUR_STEPS,
+    ICON_APP,
+    ICON_ERROR,
+    ICON_EXPLORE,
+    ICON_FIRST_PAGE,
+    ICON_INFO,
+    ICON_LAST_PAGE,
+    ICON_NAV,
+    ICON_SPEED,
+    ICON_TOUR,
+    LSTM_THRESH_IN,
+    LSTM_THRESH_OUT,
+    REPLAY_SPEED_OPTIONS,
+    SEARCH_HORIZON_MINUTES,
+)
+from dashboard.data_loader import (
+    get_clean_baseline_threshold,
+    load_all_metadata,
+    load_clean_stream,
+    run_d32_startup_check,
+)
+from dashboard.replay_engine import (
+    get_active_telemetry_slice,
+    simulate_prewarmed_window,
+)
+from dashboard.components.alert_log import render_alert_log
+from dashboard.components.banners import (
+    render_header_and_disclaimers,
+    render_train_demo_banner,
+)
+from dashboard.components.crosscheck_audit import render_crosscheck_audit
+from dashboard.components.detector_cards import (
+    render_detector_cards,
+    render_telemetry_metrics_row,
+)
+from dashboard.components.showcase import render_showcase_banner
+from dashboard.components.telemetry_chart import (
+    render_score_diagnostics,
+    render_telemetry_chart,
+)
 
-# D27: Direct imports from verified components
-from src.twin_monitors import BaselineMonitor, IFMonitor, LSTMMonitor
-from src.config import SEARCH_HORIZON_MINUTES
+# ══ Page Configuration ═════════════════════════════════════════════════════════
 
-# Paths
-MODELS_DIR = REPO_ROOT / "models"
-DATA_DIR = REPO_ROOT / "data" / "processed"
-
-# Page configuration
 st.set_page_config(
     page_title="Cold Chain EWS Digital Twin",
-    page_icon=":material/ac_unit:",
+    page_icon=ICON_APP,
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-
 # ══ D32 Startup Check ══════════════════════════════════════════════════════════
-
-def run_d32_startup_check() -> list[str]:
-    """Verify presence of required models and data artifacts (D32)."""
-    required_files = [
-        MODELS_DIR / "isolation_forest_out.joblib",
-        MODELS_DIR / "isolation_forest_in.joblib",
-        MODELS_DIR / "lstm_out.h5",
-        MODELS_DIR / "lstm_in.h5",
-        DATA_DIR / "lstm_norm_stats_out.json",
-        DATA_DIR / "lstm_norm_stats_in.json",
-        DATA_DIR / "out_features.csv",
-        DATA_DIR / "in_features.csv",
-        DATA_DIR / "out_labeled.csv",
-        DATA_DIR / "in_labeled.csv",
-        DATA_DIR / "twin_crosscheck_report.csv",
-        DATA_DIR / "three_way_comparison.csv",
-        DATA_DIR / "injection_log.csv",
-        DATA_DIR / "injection_train_test_status.csv",
-    ]
-    missing = [str(f.relative_to(REPO_ROOT)) for f in required_files if not f.exists()]
-    return missing
-
 
 missing_artifacts = run_d32_startup_check()
 if missing_artifacts:
-    st.error("Startup Artifact Verification Failed (D32)", icon=":material/error:")
+    st.error("Startup Artifact Verification Failed (D32)", icon=ICON_ERROR)
     st.markdown(
-        f"The following required model or data artifacts were not found:\n"
+        "The following required model or data artifacts were not found:\n"
         + "".join([f"- `{m}`\n" for m in missing_artifacts])
     )
     st.info(
@@ -98,182 +96,27 @@ if missing_artifacts:
         "python src/twin_monitors.py\n"
         "python src/twin_crosscheck.py\n"
         "```",
-        icon=":material/info:",
+        icon=ICON_INFO,
     )
     st.stop()
 
-
-# ══ Cached Data Loaders ════════════════════════════════════════════════════════
-
-@st.cache_data
-def load_all_metadata() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Load metadata and cross-check comparison tables."""
-    inj_log = pd.read_csv(DATA_DIR / "injection_log.csv", parse_dates=["start_timestamp"])
-    status_df = pd.read_csv(DATA_DIR / "injection_train_test_status.csv", parse_dates=["start_ts", "end_ts"])
-    three_way = pd.read_csv(DATA_DIR / "three_way_comparison.csv")
-    cross_df = pd.read_csv(DATA_DIR / "twin_crosscheck_report.csv")
-
-    merged = inj_log.merge(
-        status_df[["injection_id", "train_test_status", "start_ts", "end_ts"]],
-        on="injection_id",
-    )
-    return merged, status_df, three_way, cross_df
-
-
-@st.cache_data
-def load_clean_stream(series_name: str) -> pd.DataFrame:
-    """Load labeled telemetry stream and apply exact M5a sorting convention."""
-    path = DATA_DIR / f"{series_name.lower()}_labeled.csv"
-    raw = pd.read_csv(path, parse_dates=["ts"])
-    # Exact sorting convention from src/digital_twin.py
-    df_clean = (
-        raw.dropna(subset=["gap_seconds"])
-        .sort_values(["ts", "gap_seconds"], ascending=[True, False], kind="stable")
-        .reset_index(drop=True)
-    )
-    return df_clean
-
-
-@st.cache_data
-def get_clean_baseline_threshold(series_name: str) -> float:
-    """Compute whole-series clean baseline threshold (D24)."""
-    path = DATA_DIR / f"{series_name.lower()}_features.csv"
-    df_feat = pd.read_csv(path)
-    t = df_feat["temp"].dropna()
-    return float(t.mean() + 2.0 * t.std())
-
-
-# ══ D33 Pre-Warmed Window Simulator ═════════════════════════════════════════════
-
-@st.cache_data
-def simulate_prewarmed_window(
-    series_name: str,
-    win_start_idx: int,
-    win_end_idx: int,
-) -> pd.DataFrame:
-    """
-    Simulate streaming telemetry across the visible window with D33 silent buffer pre-warming.
-    Directly instantiates and executes verified detectors from src.twin_monitors (D27).
-    """
-    df_clean = load_clean_stream(series_name)
-    clean_features_path = DATA_DIR / f"{series_name.lower()}_features.csv"
-    if_model_path = MODELS_DIR / f"isolation_forest_{series_name.lower()}.joblib"
-    lstm_model_path = MODELS_DIR / f"lstm_{series_name.lower()}.h5"
-    lstm_stats_path = DATA_DIR / f"lstm_norm_stats_{series_name.lower()}.json"
-    lstm_thresh = 1.010091 if series_name == "Out" else 1.512753
-
-    # Instantiate verified monitors
-    base_mon = BaselineMonitor(series_name, clean_features_path)
-    if_mon = IFMonitor(series_name, if_model_path)
-    lstm_mon = LSTMMonitor(series_name, lstm_model_path, lstm_stats_path, lstm_thresh)
-
-    # D33: Pre-warm IF monitor with 10 readings prior to visible window
-    prewarm_if = df_clean.iloc[max(0, win_start_idx - 10) : win_start_idx]
-    for _, r in prewarm_if.iterrows():
-        if_mon.process_event({
-            "ts": r["ts"],
-            "temp_injected": float(r["temp_injected"]),
-            "gap_seconds": float(r["gap_seconds"]),
-        })
-    if_mon.alarm_records.clear()
-
-    # D33: Pre-warm LSTM monitor with 30 readings prior to visible window
-    prewarm_lstm = df_clean.iloc[max(0, win_start_idx - 30) : win_start_idx]
-    for _, r in prewarm_lstm.iterrows():
-        lstm_mon.process_event({
-            "ts": r["ts"],
-            "temp_injected": float(r["temp_injected"]),
-            "gap_seconds": float(r["gap_seconds"]),
-        })
-    lstm_mon.alarm_records.clear()
-
-    # Process visible window events sequentially
-    vis_rows = df_clean.iloc[win_start_idx : win_end_idx + 1]
-    window_records = []
-    for _, r in vis_rows.iterrows():
-        ev = {
-            "ts": r["ts"],
-            "temp_injected": float(r["temp_injected"]),
-            "gap_seconds": float(r["gap_seconds"]),
-        }
-        b_rec = base_mon.process_event(ev)
-        i_rec = if_mon.process_event(ev)
-        l_rec = lstm_mon.process_event(ev)
-
-        window_records.append({
-            "ts": r["ts"],
-            "temp_injected": float(r["temp_injected"]),
-            "gap_seconds": float(r["gap_seconds"]),
-            "is_injected_anomaly": bool(r.get("is_injected_anomaly", False)),
-            "baseline_score": b_rec["score"],
-            "baseline_alarm": b_rec["alarm"],
-            "baseline_threshold": b_rec["threshold"],
-            "if_score": i_rec["score"],
-            "if_alarm": i_rec["alarm"],
-            "if_threshold": 0.0,
-            "lstm_score": l_rec["score"],
-            "lstm_alarm": l_rec["alarm"],
-            "lstm_threshold": lstm_thresh,
-        })
-
-    return pd.DataFrame(window_records)
-
-
-# ══ Load Data ══════════════════════════════════════════════════════════════════
+# ══ Cached Metadata Loading ════════════════════════════════════════════════════
 
 merged_injections, status_df, three_way_df, crosscheck_df = load_all_metadata()
 
-# ══ UI Header & Persistent Disclaimers ═════════════════════════════════════════
+# ══ UI Header & Persistent Disclaimers (D31) ═══════════════════════════════════
 
-st.title(":material/ac_unit: Cold Chain EWS — Live Digital Twin Anomaly Monitor")
-st.markdown(
-    "**A presentation-grade streaming early warning demonstration comparing Naive Baseline, "
-    "Isolation Forest, and LSTM-Autoencoder anomaly detection.**"
-)
+render_header_and_disclaimers()
 
-# D31: Persistent Structural Proxy Disclaimer Banner
-st.warning(
-    "**STRUCTURAL PROXY NOTICE**: All telemetry derives from `IOT-temp.csv` "
-    "(generic IoT temperature sensor log), **NOT** refrigerated-transport operations. "
-    "All injected anomalies are synthetic proxy constructs. Detectors carry no food-safety significance. "
-    "See `docs/AD_LOG.md` (D1–D34).",
-    icon=":material/warning:",
-)
+# ══ Sidebar Replay Navigation ══════════════════════════════════════════════════
 
-
-# ══ Sidebar Controls ═══════════════════════════════════════════════════════════
-
-st.sidebar.header("Replay Navigation", icon=":material/navigation:")
+st.sidebar.header("Replay Navigation", icon=ICON_NAV)
 
 mode = st.sidebar.radio(
     "Select Operating Mode",
-    [":material/tour: Guided Tour (Viva Showcase)", ":material/explore: Free Explore (All 30 Injections)"],
+    [f"{ICON_TOUR} Guided Tour (Viva Showcase)", f"{ICON_EXPLORE} Free Explore (All 30 Injections)"],
     index=0,
 )
-
-# Bug 3 fix: Shorten Guided Tour labels so they fit without mid-word truncation
-GUIDED_TOUR_STEPS = [
-    {
-        "id": "out_step_001",
-        "label": "1. out_step_001 — Step",
-        "summary": "Step Anomaly: Catastrophic jump triggers all 3 models synchronously at onset.",
-    },
-    {
-        "id": "out_drift_009",
-        "label": "2. out_drift_009 — Drift",
-        "summary": "Thermal Drift: Multivariate early warning lead vs sequence memory inertia lag.",
-    },
-    {
-        "id": "out_flatline_013",
-        "label": "3. out_flatline_013 — Flatline",
-        "summary": "In-Range Flatline: Zero variance failure for Baseline, subtle detection by IF.",
-    },
-    {
-        "id": "in_drift_023",
-        "label": "4. in_drift_023 — Drift",
-        "summary": "Inbound Drift: IF achieves +11.0 min early warning prior to baseline crossing.",
-    },
-]
 
 if "Guided Tour" in mode:
     step_labels = [s["label"] for s in GUIDED_TOUR_STEPS]
@@ -287,7 +130,7 @@ else:
     if series_filter != "All":
         filtered_injs = filtered_injs[filtered_injs["series"] == series_filter]
 
-    def format_inj_option(row):
+    def format_inj_option(row: pd.Series) -> str:
         status_tag = "TEST" if row["train_test_status"] == "test" else "TRAIN DEMO"
         return f"{row['injection_id']} | {row['series']} {row['type']} [{status_tag}]"
 
@@ -310,17 +153,9 @@ end_ts = pd.Timestamp(inj_row["end_ts"])
 horizon_end_ts = end_ts + pd.Timedelta(minutes=SEARCH_HORIZON_MINUTES)
 
 # D31: Demo banner for train-side injections
-if status == "train":
-    st.info(
-        "**DEMO ONLY — Prior Training Exposure (D26/D31)**: "
-        "This injection occurred during the training time range (`ts < cutoff_ts`). "
-        "Its live detection is demonstrated strictly as an interactive deployment preview, "
-        "**not** as an out-of-sample scientific performance claim.",
-        icon=":material/info:",
-    )
+render_train_demo_banner(status)
 
-
-# ══ Window Setup & Simulation ══════════════════════════════════════════════════
+# ══ Window Setup & Simulation Loop (D33) ═══════════════════════════════════════
 
 df_stream = load_clean_stream(series)
 win_start_ts = onset_ts - pd.Timedelta(hours=padding_hours)
@@ -328,37 +163,33 @@ win_end_ts = horizon_end_ts + pd.Timedelta(hours=padding_hours)
 
 win_indices = df_stream[(df_stream["ts"] >= win_start_ts) & (df_stream["ts"] <= win_end_ts)].index
 if len(win_indices) == 0:
-    st.error(f"No telemetry readings found in window {win_start_ts} to {win_end_ts}", icon=":material/error:")
+    st.error(f"No telemetry readings found in window {win_start_ts} to {win_end_ts}", icon=ICON_ERROR)
     st.stop()
 
 win_start_idx = int(win_indices[0])
 win_end_idx = int(win_indices[-1])
 
-# Run simulation with D33 pre-warming
 sim_df = simulate_prewarmed_window(series, win_start_idx, win_end_idx)
 total_frames = len(sim_df)
-
 
 # ══ Playback Controls (D28) ════════════════════════════════════════════════════
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Playback Controls", icon=":material/speed:")
+st.sidebar.subheader("Playback Controls", icon=ICON_SPEED)
 
-# Session state for playback position
 session_key = f"playhead_{selected_inj_id}"
 if session_key not in st.session_state:
-    st.session_state[session_key] = total_frames - 1  # Default to full window viewed
-
-c_reset, c_end = st.sidebar.columns(2)
-if c_reset.button("Start", icon=":material/first_page:", use_container_width=True, help="Reset to Start of Window"):
-    st.session_state[session_key] = 0
-if c_end.button("End", icon=":material/last_page:", use_container_width=True, help="Jump to End of Window"):
     st.session_state[session_key] = total_frames - 1
 
-# Bug 4 fix: Remove separate caption and pass D28 explanation directly via help= tooltip
+c_reset, c_end = st.sidebar.columns(2)
+if c_reset.button("Start", icon=ICON_FIRST_PAGE, use_container_width=True, help="Reset to Start of Window"):
+    st.session_state[session_key] = 0
+if c_end.button("End", icon=ICON_LAST_PAGE, use_container_width=True, help="Jump to End of Window"):
+    st.session_state[session_key] = total_frames - 1
+
 replay_speed = st.sidebar.select_slider(
     "Replay Speed Factor",
-    options=["1x", "5x", "10x", "25x", "Instant"],
+    options=REPLAY_SPEED_OPTIONS,
     value="Instant",
     help="Playback speed is display-only and never alters telemetry values fed to models (D28).",
 )
@@ -372,531 +203,112 @@ current_frame = st.sidebar.slider(
 )
 st.session_state[session_key] = current_frame
 
-
-# ══ D34 Dynamic Guided Tour Captions (Bug 2 Fix) ═══════════════════════════════
-
-# Fetch values dynamically from three_way_comparison.csv and twin_crosscheck_report.csv
-tw_match = three_way_df[three_way_df["injection_id"] == selected_inj_id]
-tw_row = tw_match.iloc[0] if not tw_match.empty else None
-
-base_alarm_str = str(tw_row["baseline_alarm_timestamp"]) if tw_row is not None and pd.notna(tw_row["baseline_alarm_timestamp"]) else "None"
-base_lead_val = float(tw_row["baseline_lead_time_min"]) if tw_row is not None and pd.notna(tw_row["baseline_lead_time_min"]) else None
-if_alarm_str = str(tw_row["alarm_timestamp_IF"]) if tw_row is not None and pd.notna(tw_row["alarm_timestamp_IF"]) else "None"
-if_lead_val = float(tw_row["lead_time_IF_min"]) if tw_row is not None and pd.notna(tw_row["lead_time_IF_min"]) else None
-lstm_alarm_str = str(tw_row["alarm_timestamp_LSTM"]) if tw_row is not None and pd.notna(tw_row["alarm_timestamp_LSTM"]) else "None"
-lstm_lead_val = float(tw_row["lead_time_LSTM_min"]) if tw_row is not None and pd.notna(tw_row["lead_time_LSTM_min"]) else None
-lstm_reason = str(tw_row["lstm_evaluation_reason"]) if tw_row is not None and pd.notna(tw_row["lstm_evaluation_reason"]) else "N/A"
+# ══ Scientific Context & Thresholds ════════════════════════════════════════════
 
 clean_thresh = get_clean_baseline_threshold(series)
-lstm_thresh_val = 1.010091 if series == "Out" else 1.512753
+lstm_thresh_val = LSTM_THRESH_OUT if series == "Out" else LSTM_THRESH_IN
 
-# Bug 2 fix: Rebuilt container with st.container(border=True), plain st.markdown, and st.columns below
-if "Guided Tour" in mode:
-    with st.container(border=True):
-        if selected_inj_id == "out_step_001":
-            st.markdown("### Showcase 1: Unambiguous Step Anomaly (Catastrophic Failure Anchor)")
-            st.markdown(
-                f"A sudden +12.0 °C step displacement occurs at `{onset_ts}`. "
-                f"All three detectors trigger synchronously at the very first post-onset reading at "
-                f"`{base_alarm_str}` with an identical lead time of **{base_lead_val:.1f} minutes**. "
-                f"This confirms zero latency divergence under gross, catastrophic system breaches."
-            )
-        elif selected_inj_id == "out_drift_009":
-            st.markdown("### Showcase 2: Incipient Thermal Drift (Early Warning vs. Sequence Lag)")
-            st.markdown(
-                f"Under gradual thermal drift (+0.03 °C/min), the Naive Baseline remains blind until upper limit crossing at "
-                f"`{base_alarm_str}` (lead time: **{base_lead_val:.1f} min**). "
-                f"Isolation Forest flags multivariate anomalies early at `{if_alarm_str}`, providing a "
-                f"vital early warning advantage of **+{if_lead_val:.1f} minutes**. "
-                f"In contrast, LSTM-Autoencoder triggers at `{lstm_alarm_str}` with a lead time of "
-                f"**{lstm_lead_val:.1f} minutes** (a **{abs(lstm_lead_val):.1f}-minute lag** relative to baseline crossing), "
-                f"illustrating autoencoder sequence inertia during creeping, low-slope drift."
-            )
-        elif selected_inj_id == "out_flatline_013":
-            st.markdown("### Showcase 3: Flatline Within Normal Temperature Bounds (Baseline Blind Spot)")
-            st.markdown(
-                f"The sensor value freezes at ~37.3 °C, entirely inside normal operating temperatures. "
-                f"Because the value never exceeds the clean threshold (`{clean_thresh:.2f} °C`), the Naive Baseline "
-                f"**completely fails to alarm** (alarm: `{base_alarm_str}`). "
-                f"Isolation Forest captures the unnatural collapse in rolling variance and alarms at `{if_alarm_str}`. "
-                f"LSTM reconstruction error remains below threshold (`{lstm_thresh_val:.4f}`), resulting in "
-                f"`{lstm_reason}`."
-            )
-        elif selected_inj_id == "in_drift_023":
-            st.markdown("### Showcase 4: Inbound Thermal Drift (Multi-Model Validation)")
-            st.markdown(
-                f"Inbound sensor drift beginning at `{onset_ts}`. "
-                f"Isolation Forest alarms early at `{if_alarm_str}` giving "
-                f"**+{if_lead_val:.1f} minutes** early warning. "
-                f"Both Naive Baseline and LSTM-Autoencoder trigger synchronously when temperature crosses the upper threshold at "
-                f"`{base_alarm_str}` (lead time: **{base_lead_val:.1f} minutes**)."
-            )
+# ══ D34 Showcase Narrative & Metadata Row ══════════════════════════════════════
 
-        st.divider()
-        c_c1, c_c2, c_c3, c_c4 = st.columns(4)
-        with c_c1:
-            st.metric(
-                label="Onset Time",
-                value=onset_ts.strftime("%H:%M:%S"),
-                delta=onset_ts.strftime("%Y-%m-%d"),
-                delta_color="off",
-                help=f"Full Anomaly Onset: {onset_ts.strftime('%Y-%m-%d %H:%M:%S')}",
-            )
-        with c_c2:
-            st.metric(
-                label="Anomaly Type",
-                value=inj_type.capitalize(),
-                help=f"Synthetic Anomaly Type: {inj_type.capitalize()}",
-            )
-        with c_c3:
-            st.metric(
-                label="Baseline Alarm",
-                value=base_alarm_str.split(" ")[-1] if base_alarm_str != "None" else "No Alarm",
-                help=f"Baseline Alarm Timestamp: {base_alarm_str}",
-            )
-        with c_c4:
-            st.metric(
-                label="IF Lead Time",
-                value=f"{if_lead_val:+.1f} min" if if_lead_val is not None else "N/A",
-                delta="Early warning" if (if_lead_val is not None and if_lead_val > 0) else None,
-                help=f"Isolation Forest Lead Time: {if_lead_val:+.1f} min relative to baseline" if if_lead_val is not None else "Isolation Forest did not alarm",
-            )
+render_showcase_banner(
+    mode=mode,
+    selected_inj_id=selected_inj_id,
+    inj_type=inj_type,
+    onset_ts=onset_ts,
+    three_way_df=three_way_df,
+    clean_thresh=clean_thresh,
+    lstm_thresh_val=lstm_thresh_val,
+)
 
+# ══ Active Telemetry Slice & Detector Alarms ═══════════════════════════════════
 
-# ══ Current Telemetry & Detector Cards ═════════════════════════════════════════
-
-active_slice = sim_df.iloc[: current_frame + 1]
-current_reading = sim_df.iloc[current_frame]
+active_slice, current_reading, eval_slice, b_fired, i_fired, l_fired = get_active_telemetry_slice(
+    sim_df=sim_df,
+    current_frame=current_frame,
+    onset_ts=onset_ts,
+    horizon_end_ts=horizon_end_ts,
+)
 curr_ts = current_reading["ts"]
 curr_temp = current_reading["temp_injected"]
 
-# Calculate alarms fired so far within the evaluation horizon [onset_ts, horizon_end_ts]
-eval_slice = active_slice[(active_slice["ts"] >= onset_ts) & (active_slice["ts"] <= horizon_end_ts)]
-b_fired = eval_slice[eval_slice["baseline_alarm"] == True]
-i_fired = eval_slice[eval_slice["if_alarm"] == True]
-l_fired = eval_slice[eval_slice["lstm_alarm"] == True]
+# ══ Telemetry Metrics Bar ══════════════════════════════════════════════════════
 
-col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-with col_m1:
-    st.metric(
-        "Replay Time",
-        curr_ts.strftime("%H:%M:%S"),
-        curr_ts.strftime("%Y-%m-%d"),
-        delta_color="off",
-        help=f"Replay Timestamp: {curr_ts} (Frame {current_frame + 1} / {total_frames})",
-    )
-with col_m2:
-    delta_onset = (curr_ts - onset_ts).total_seconds() / 60.0
-    st.metric(
-        "Live Temperature",
-        f"{curr_temp:.2f} °C",
-        f"{delta_onset:+.0f}m from onset",
-        help=f"Sensor reading at current playhead. Offset from onset: {delta_onset:+.1f} minutes",
-    )
-with col_m3:
-    # Shorten "Stream Status" value to avoid truncation, full description in help=
-    if onset_ts <= curr_ts <= end_ts:
-        status_word = "Anomalous"
-        status_help = f"Injection Active: {inj_type.upper()} ({onset_ts} to {end_ts})"
-    elif end_ts < curr_ts <= horizon_end_ts:
-        status_word = "Horizon"
-        status_help = f"Evaluation Search Horizon Active ({SEARCH_HORIZON_MINUTES:.0f}m past end)"
-    else:
-        status_word = "Normal"
-        status_help = "Baseline streaming telemetry without active injection"
+render_telemetry_metrics_row(
+    curr_ts=curr_ts,
+    current_frame=current_frame,
+    total_frames=total_frames,
+    curr_temp=curr_temp,
+    onset_ts=onset_ts,
+    end_ts=end_ts,
+    horizon_end_ts=horizon_end_ts,
+    inj_type=inj_type,
+    series=series,
+    status=status,
+    b_fired=b_fired,
+    i_fired=i_fired,
+    l_fired=l_fired,
+)
 
-    st.metric(
-        "Stream Status",
-        status_word,
-        f"Series: {series}",
-        help=status_help,
-    )
-with col_m4:
-    total_active_alarms = int(len(b_fired) > 0) + int(len(i_fired) > 0) + int(len(l_fired) > 0)
-    st.metric(
-        "Active Alarms",
-        f"{total_active_alarms} / 3 Fired",
-        f"Status: {status.upper()}",
-        help=f"Number of distinct detectors that have fired at least once up to current playhead.",
-    )
+# ══ Three-Way Detector Comparison Cards ════════════════════════════════════════
 
-st.markdown("---")
+tw_match = three_way_df[three_way_df["injection_id"] == selected_inj_id]
+tw_row = tw_match.iloc[0] if not tw_match.empty else None
 
-# Replace hand-rolled HTML strings with native st.metric primitives across all three cards
-c_det1, c_det2, c_det3 = st.columns(3)
+base_lead_val = float(tw_row["baseline_lead_time_min"]) if tw_row is not None and pd.notna(tw_row["baseline_lead_time_min"]) else None
+if_lead_val = float(tw_row["lead_time_IF_min"]) if tw_row is not None and pd.notna(tw_row["lead_time_IF_min"]) else None
+lstm_lead_val = float(tw_row["lead_time_LSTM_min"]) if tw_row is not None and pd.notna(tw_row["lead_time_LSTM_min"]) else None
+lstm_reason = str(tw_row["lstm_evaluation_reason"]) if tw_row is not None and pd.notna(tw_row["lstm_evaluation_reason"]) else "N/A"
 
-with c_det1:
-    with st.container(border=True):
-        st.subheader("Naive Baseline", icon=":material/rule:")
-        b_first_ts = b_fired.iloc[0]["ts"] if not b_fired.empty else None
-        b_lead = (end_ts - b_first_ts).total_seconds() / 60.0 if b_first_ts is not None else None
-
-        st.metric(
-            label="Current Telemetry",
-            value=f"{curr_temp:.2f} °C",
-            delta=f"Threshold: {clean_thresh:.2f} °C",
-            delta_color="off",
-        )
-        if b_first_ts:
-            effective_lead = base_lead_val if base_lead_val is not None else b_lead
-            st.metric(
-                label="Lead Time (Early Warning)",
-                value=f"{effective_lead:.1f} min",
-                delta=f"Alarm: {b_first_ts.strftime('%H:%M:%S')}",
-                delta_color="normal" if effective_lead > 0 else "off",
-                help=f"First baseline alarm fired at {b_first_ts}",
-            )
-        else:
-            st.metric(
-                label="Lead Time (Early Warning)",
-                value="No Alarm",
-                delta="Normal in window",
-                delta_color="off",
-                help="Baseline threshold not breached within evaluation window",
-            )
-
-with c_det2:
-    with st.container(border=True):
-        st.subheader("Isolation Forest", icon=":material/forest:")
-        i_first_ts = i_fired.iloc[0]["ts"] if not i_fired.empty else None
-        i_lead = (end_ts - i_first_ts).total_seconds() / 60.0 if i_first_ts is not None else None
-
-        st.metric(
-            label="Decision Score",
-            value=f"{current_reading['if_score']:.4f}",
-            delta="Threshold: < 0.0000",
-            delta_color="off",
-        )
-        if i_first_ts:
-            effective_lead = if_lead_val if if_lead_val is not None else i_lead
-            st.metric(
-                label="Lead Time (Early Warning)",
-                value=f"{effective_lead:.1f} min",
-                delta=f"Alarm: {i_first_ts.strftime('%H:%M:%S')}",
-                delta_color="normal" if effective_lead > 0 else "off",
-                help=f"First Isolation Forest alarm fired at {i_first_ts}",
-            )
-        else:
-            st.metric(
-                label="Lead Time (Early Warning)",
-                value="No Alarm",
-                delta="Normal in window",
-                delta_color="off",
-                help="Decision score remained >= 0.0 throughout evaluation window",
-            )
-
-with c_det3:
-    with st.container(border=True):
-        st.subheader("LSTM-Autoencoder", icon=":material/memory:")
-        l_first_ts = l_fired.iloc[0]["ts"] if not l_fired.empty else None
-        l_lead = (end_ts - l_first_ts).total_seconds() / 60.0 if l_first_ts is not None else None
-
-        st.metric(
-            label="Reconstruction MSE",
-            value=f"{current_reading['lstm_score']:.4f}",
-            delta=f"Threshold: ≥ {lstm_thresh_val:.4f}",
-            delta_color="off",
-        )
-        if l_first_ts:
-            effective_lead = lstm_lead_val if lstm_lead_val is not None else l_lead
-            st.metric(
-                label="Lead Time (Early Warning)",
-                value=f"{effective_lead:.1f} min",
-                delta=f"Alarm: {l_first_ts.strftime('%H:%M:%S')}",
-                delta_color="normal" if effective_lead > 0 else ("inverse" if effective_lead < 0 else "off"),
-                help=f"First LSTM alarm fired at {l_first_ts}",
-            )
-        else:
-            if lstm_reason == "never_flagged":
-                reason_short = "Never flagged"
-            elif "excluded" in lstm_reason:
-                reason_short = "Excluded (Train)"
-            else:
-                reason_short = "No Alarm"
-            st.metric(
-                label="Lead Time (Early Warning)",
-                value="No Alarm",
-                delta=reason_short,
-                delta_color="off",
-                help=f"Evaluation Status: {lstm_reason}",
-            )
-
+render_detector_cards(
+    curr_temp=curr_temp,
+    clean_thresh=clean_thresh,
+    end_ts=end_ts,
+    b_fired=b_fired,
+    base_lead_val=base_lead_val,
+    current_reading=current_reading,
+    i_fired=i_fired,
+    if_lead_val=if_lead_val,
+    lstm_thresh_val=lstm_thresh_val,
+    l_fired=l_fired,
+    lstm_lead_val=lstm_lead_val,
+    lstm_reason=lstm_reason,
+)
 
 # ══ Interactive Altair Telemetry & Alarm Trajectory Chart ══════════════════════
 
-st.markdown("---")
-st.subheader("Live Streaming Telemetry & Alarm Horizon", icon=":material/timeline:")
-
-# Base line chart of temperature
-base_chart = alt.Chart(sim_df).encode(
-    x=alt.X("ts:T", title="Timestamp", axis=alt.Axis(format="%Y-%m-%d %H:%M")),
+playhead_rule = render_telemetry_chart(
+    sim_df=sim_df,
+    clean_thresh=clean_thresh,
+    onset_ts=onset_ts,
+    end_ts=end_ts,
+    horizon_end_ts=horizon_end_ts,
+    inj_type=inj_type,
+    curr_ts=curr_ts,
+    b_fired=b_fired,
+    i_fired=i_fired,
+    l_fired=l_fired,
 )
 
-temp_line = base_chart.mark_line(color="#1e293b", strokeWidth=2).encode(
-    y=alt.Y("temp_injected:Q", title="Temperature (°C)", scale=alt.Scale(zero=False)),
-    tooltip=[
-        alt.Tooltip("ts:T", title="Timestamp", format="%Y-%m-%d %H:%M:%S"),
-        alt.Tooltip("temp_injected:Q", title="Temp (°C)", format=".2f"),
-        alt.Tooltip("if_score:Q", title="IF Score", format=".4f"),
-        alt.Tooltip("lstm_score:Q", title="LSTM MSE", format=".4f"),
-    ],
+render_score_diagnostics(
+    sim_df=sim_df,
+    playhead_rule=playhead_rule,
+    lstm_thresh_val=lstm_thresh_val,
 )
 
-# Baseline threshold line
-thresh_df = pd.DataFrame([{"thresh": clean_thresh}])
-thresh_rule = alt.Chart(thresh_df).mark_rule(color="#ef4444", strokeDash=[6, 4], strokeWidth=1.5).encode(
-    y="thresh:Q",
-    tooltip=[alt.Tooltip("thresh:Q", title="Baseline Threshold (°C)", format=".2f")],
+# ══ Real-Time Alert Log ════════════════════════════════════════════════════════
+
+render_alert_log(
+    active_slice=active_slice,
+    clean_thresh=clean_thresh,
+    onset_ts=onset_ts,
+    horizon_end_ts=horizon_end_ts,
+    lstm_thresh_val=lstm_thresh_val,
 )
-
-# Shaded span for Injection Active
-span_inj = alt.Chart(pd.DataFrame([{
-    "start": onset_ts,
-    "end": end_ts,
-    "label": f"Injection Active: {inj_type.upper()}",
-}])).mark_rect(color="#f97316", opacity=0.18).encode(
-    x="start:T",
-    x2="end:T",
-)
-
-# Shaded span for Search Horizon
-span_horizon = alt.Chart(pd.DataFrame([{
-    "start": end_ts,
-    "end": horizon_end_ts,
-    "label": f"Evaluation Search Horizon ({SEARCH_HORIZON_MINUTES:.0f}m)",
-}])).mark_rect(color="#a855f7", opacity=0.12).encode(
-    x="start:T",
-    x2="end:T",
-)
-
-# Vertical rule for current playback position
-playhead_rule = alt.Chart(pd.DataFrame([{"playhead": curr_ts}])).mark_rule(
-    color="#2563eb",
-    strokeWidth=2.5,
-    strokeDash=[3, 3],
-).encode(x="playhead:T")
-
-# Alarm point layers (plotted if alarms triggered up to current frame)
-alarm_layers = []
-
-if not b_fired.empty:
-    b_pts = alt.Chart(b_fired).mark_point(color="#dc2626", shape="triangle-up", size=110, filled=True).encode(
-        x="ts:T",
-        y="temp_injected:Q",
-        tooltip=[alt.Tooltip("ts:T", title="Baseline Alarm"), alt.Tooltip("temp_injected:Q", title="Temp")],
-    )
-    alarm_layers.append(b_pts)
-
-if not i_fired.empty:
-    i_pts = alt.Chart(i_fired).mark_point(color="#16a34a", shape="square", size=90, filled=True).encode(
-        x="ts:T",
-        y="temp_injected:Q",
-        tooltip=[alt.Tooltip("ts:T", title="IF Alarm"), alt.Tooltip("if_score:Q", title="IF Score")],
-    )
-    alarm_layers.append(i_pts)
-
-if not l_fired.empty:
-    l_pts = alt.Chart(l_fired).mark_point(color="#2563eb", shape="circle", size=90, filled=True).encode(
-        x="ts:T",
-        y="temp_injected:Q",
-        tooltip=[alt.Tooltip("ts:T", title="LSTM Alarm"), alt.Tooltip("lstm_score:Q", title="LSTM MSE")],
-    )
-    alarm_layers.append(l_pts)
-
-chart = span_inj + span_horizon + thresh_rule + temp_line + playhead_rule
-for al in alarm_layers:
-    chart = chart + al
-
-st.altair_chart(chart.properties(height=360), use_container_width=True)
-
-st.caption(
-    "Visual Legend: Orange Band = Injection Duration | Purple Band = Search Horizon (60 min) | "
-    "Red Triangles = Baseline Alarms | Green Squares = Isolation Forest Alarms | "
-    "Blue Circles = LSTM-Autoencoder Alarms | Dashed Blue Line = Current Playhead"
-)
-
-
-# ══ Secondary Score Diagnostics Panel ══════════════════════════════════════════
-
-with st.expander("Inspect Live Anomaly Score Trajectories (IF Decision vs. LSTM MSE)", icon=":material/monitoring:"):
-    c_diag1, c_diag2 = st.columns(2)
-    with c_diag1:
-        if_chart = (
-            alt.Chart(sim_df)
-            .mark_line(color="#16a34a")
-            .encode(
-                x=alt.X("ts:T", title="Timestamp"),
-                y=alt.Y("if_score:Q", title="IF Decision Score (<0 is Anomaly)"),
-            )
-        )
-        if_rule = alt.Chart(pd.DataFrame([{"zero": 0.0}])).mark_rule(color="#991b1b", strokeDash=[4, 4]).encode(y="zero:Q")
-        st.altair_chart((if_chart + if_rule + playhead_rule).properties(height=200), use_container_width=True)
-        st.caption("Isolation Forest Decision Function Score (Threshold: 0.0)")
-
-    with c_diag2:
-        lstm_chart = (
-            alt.Chart(sim_df)
-            .mark_line(color="#2563eb")
-            .encode(
-                x=alt.X("ts:T", title="Timestamp"),
-                y=alt.Y("lstm_score:Q", title="LSTM Reconstruction MSE (D16)"),
-            )
-        )
-        lstm_rule = alt.Chart(pd.DataFrame([{"thresh": lstm_thresh_val}])).mark_rule(color="#991b1b", strokeDash=[4, 4]).encode(y="thresh:Q")
-        st.altair_chart((lstm_chart + lstm_rule + playhead_rule).properties(height=200), use_container_width=True)
-        st.caption(f"LSTM Reconstruction Error MSE (D13 Threshold: {lstm_thresh_val:.4f})")
-
-
-# ══ Real-Time Alert Log (Bug 5 Audit & Fix) ════════════════════════════════════
-
-st.markdown("---")
-st.subheader("Live Streaming Alert Log", icon=":material/list_alt:")
-
-all_active_alarms = []
-for _, r in active_slice.iterrows():
-    t_stamp = r["ts"]
-    temp = r["temp_injected"]
-    if r["baseline_alarm"]:
-        all_active_alarms.append({
-            "Timestamp": t_stamp,
-            "Detector": "Naive Baseline",
-            "Telemetry (°C)": f"{temp:.2f}",
-            "Score": f"{r['baseline_score']:.2f}",
-            "Threshold": f"{clean_thresh:.2f}",
-            "Evaluation Window": "In Horizon" if onset_ts <= t_stamp <= horizon_end_ts else "Outside Horizon",
-        })
-    if r["if_alarm"]:
-        all_active_alarms.append({
-            "Timestamp": t_stamp,
-            "Detector": "Isolation Forest",
-            "Telemetry (°C)": f"{temp:.2f}",
-            "Score": f"{r['if_score']:.4f}",
-            "Threshold": "0.0000",
-            "Evaluation Window": "In Horizon" if onset_ts <= t_stamp <= horizon_end_ts else "Outside Horizon",
-        })
-    if r["lstm_alarm"]:
-        all_active_alarms.append({
-            "Timestamp": t_stamp,
-            "Detector": "LSTM-Autoencoder",
-            "Telemetry (°C)": f"{temp:.2f}",
-            "Score": f"{r['lstm_score']:.4f}",
-            "Threshold": f"{lstm_thresh_val:.4f}",
-            "Evaluation Window": "In Horizon" if onset_ts <= t_stamp <= horizon_end_ts else "Outside Horizon",
-        })
-
-# Bug 5 fix: Add filter controls and explicit distribution legend
-c_filt1, c_filt2 = st.columns([2, 2])
-with c_filt1:
-    detector_filter = st.selectbox(
-        "Filter by Detector",
-        ["All Detectors", "Naive Baseline", "Isolation Forest", "LSTM-Autoencoder"],
-        index=0,
-    )
-with c_filt2:
-    window_filter = st.selectbox(
-        "Filter by Window",
-        ["All Window Readings", "Within Search Horizon Only"],
-        index=0,
-    )
-
-if all_active_alarms:
-    df_alerts = pd.DataFrame(all_active_alarms)
-
-    # Compute detector counts
-    n_base = int((df_alerts["Detector"] == "Naive Baseline").sum())
-    n_if = int((df_alerts["Detector"] == "Isolation Forest").sum())
-    n_lstm = int((df_alerts["Detector"] == "LSTM-Autoencoder").sum())
-
-    st.caption(
-        f":material/info: **Alert Distribution up to Playhead:** "
-        f"Naive Baseline: **{n_base}** | Isolation Forest: **{n_if}** | LSTM-Autoencoder: **{n_lstm}**. "
-        f"(Isolation Forest triggers frequently due to its known higher anomaly sensitivity / false-positive profile from M3)."
-    )
-
-    if detector_filter != "All Detectors":
-        df_alerts = df_alerts[df_alerts["Detector"] == detector_filter]
-    if window_filter == "Within Search Horizon Only":
-        df_alerts = df_alerts[df_alerts["Evaluation Window"] == "In Horizon"]
-
-    df_alerts = df_alerts.sort_values("Timestamp", ascending=False).reset_index(drop=True)
-    st.dataframe(
-        df_alerts,
-        use_container_width=True,
-        height=220,
-        column_config={
-            "Timestamp": st.column_config.TextColumn("Timestamp", width="medium"),
-            "Detector": st.column_config.TextColumn("Detector", width="medium"),
-            "Telemetry (°C)": st.column_config.TextColumn("Telemetry (°C)", width="small"),
-            "Score": st.column_config.TextColumn("Score", width="small"),
-            "Threshold": st.column_config.TextColumn("Threshold", width="small"),
-            "Evaluation Window": st.column_config.TextColumn("Evaluation Window", width="medium"),
-        },
-    )
-else:
-    st.info("No anomaly alarms triggered up to current replay position.", icon=":material/info:")
-
 
 # ══ Scientific Cross-Check Verification Audit (Footer) ═════════════════════════
 
-st.markdown("---")
-st.subheader("Milestone 5b Cross-Check Verification Audit", icon=":material/fact_check:")
-
-if status == "test":
-    # Filter cross-check report for this injection
-    m5b_report = crosscheck_df[crosscheck_df["injection_id"] == selected_inj_id].copy()
-    all_matched = bool((m5b_report["match"] == True).all() or (m5b_report["match"] == "True").all())
-
-    c_audit1, c_audit2 = st.columns([3, 1])
-    with c_audit1:
-        st.markdown(
-            "This injection is part of the **6 out-of-sample test injections** representing the primary scientific benchmark. "
-            "All streaming alarms produced by the Digital Twin are verified against the frozen batch evaluations from Milestones 2, 3, and 4b."
-        )
-    with c_audit2:
-        if all_matched:
-            st.success("100% BIT-EXACT MATCH\n\nAll 3 live detectors match frozen Milestone 2/3/4b evaluations exactly.", icon=":material/verified:")
-        else:
-            st.warning("Cross-check review required.", icon=":material/warning:")
-
-    # Map long verification strings to concise in-table summaries to prevent canvas truncation
-    def _summarize_audit_notes(note_str: str) -> str:
-        s = str(note_str)
-        if "whole-series" in s:
-            return "Exact match (M2 whole-series threshold, D24)"
-        if "M3 batch test" in s:
-            return "Exact match (M3 batch test evaluation)"
-        if "M4b batch test" in s:
-            return "Exact match (M4b batch test, unaffected by D23)"
-        if "never flagged" in s:
-            return "Exact match (never flagged in window)"
-        return s
-
-    m5b_display = m5b_report.copy()
-    m5b_display["notes_summary"] = m5b_display["notes"].apply(_summarize_audit_notes)
-
-    # Full container width table with concise notes and unconstrained column to fill width
-    st.dataframe(
-        m5b_display[["detector", "live_alarm_timestamp", "batch_alarm_timestamp", "match", "notes_summary"]],
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "detector": st.column_config.TextColumn("Detector", width="small"),
-            "live_alarm_timestamp": st.column_config.TextColumn("Live Alarm", width="medium"),
-            "batch_alarm_timestamp": st.column_config.TextColumn("Batch Alarm", width="medium"),
-            "match": st.column_config.CheckboxColumn("Exact Match", width="small"),
-            "notes_summary": st.column_config.TextColumn(
-                "Verification Notes",
-                help="Concise verification summary against frozen batch baseline (see expander below for full scientific protocol detail)",
-            ),
-        },
-    )
-
-    with st.expander("Detailed Verification Notes & Scientific Protocol Context (D23, D24, D26)", expanded=False):
-        for _, r in m5b_report.iterrows():
-            st.markdown(f"- **{r['detector'].upper()}**: {r['notes']}")
-else:
-    st.markdown(
-        f"**Injection `{selected_inj_id}` is a training-region deployment demonstration (D26/D31).**<br>"
-        "Because models had prior training exposure to this period, batch cross-check values are not computed or claimed as an out-of-sample benchmark.",
-        unsafe_allow_html=True,
-    )
+render_crosscheck_audit(
+    status=status,
+    selected_inj_id=selected_inj_id,
+    crosscheck_df=crosscheck_df,
+)
