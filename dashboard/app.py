@@ -26,6 +26,17 @@ DESIGN DECISIONS HONORED:
 
 from __future__ import annotations
 
+import pathlib
+import sys
+
+# Ensure repository root and src directory are on sys.path for Streamlit Cloud
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+SRC_DIR = REPO_ROOT / "src"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 import pandas as pd
 import streamlit as st
 
