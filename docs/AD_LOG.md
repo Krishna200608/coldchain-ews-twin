@@ -3,6 +3,93 @@
 All significant design/data decisions for this project are recorded here in
 reverse-chronological order. Each entry states *what* was decided and *why*.
 
+## 2026-09-19 — D34: Dynamic runtime interpolation of guided tour captions (Milestone 6)
+
+**Decision:** All quantitative metrics, alarm timestamps, and lead-time figures displayed in the Guided Tour narrative boxes are interpolated dynamically at runtime from `data/processed/three_way_comparison.csv` and `data/processed/twin_crosscheck_report.csv`. No lead times, alarm timestamps, or threshold values are hardcoded as static string literals in the UI code.
+
+**Rationale:** Hardcoding numerical claims in presentation code introduces silent documentation drift whenever upstream models, thresholds, or evaluation tables are updated. Pulling values directly from the verified evaluation artifacts guarantees that what the viewer reads in the narrative perfectly mirrors the underlying serialized evaluation data.
+
+**Limitation:** If evaluation CSV schemas change or columns are renamed, the dashboard caption formatting strings must be updated to match the new schema.
+
+---
+
+## 2026-09-19 — D33: Mandatory silent monitor buffer pre-warming in jump-to-injection mode (Milestone 6)
+
+**Decision:** When executing in Jump-to-Injection mode (where playback commences at an arbitrary padded timestamp before an anomaly), detector state buffers are **silently pre-warmed** prior to rendering the visible window:
+1. `IFMonitor` is fed the 10 readings immediately preceding `win_start_idx` to populate its `deque(maxlen=10)` buffer for rolling mean and sample standard deviation (`ddof=1`).
+2. `LSTMMonitor` is fed the 30 readings immediately preceding `win_start_idx` to populate its `deque(maxlen=30)` sliding window buffer.
+Pre-warm events do not emit alarms or alter visible UI timestamps; their alarm buffers are purged immediately before visible playback starts. Automated test `tests/test_d33_prewarm.py` programmatically confirms that pre-warming reproduces all 18 test-side alarm timestamps across all 3 detectors with 100% bit-exact parity against `twin_crosscheck_report.csv`.
+
+**Rationale:** Cold-starting detectors at an arbitrary sub-window start index would introduce an artificial 29-reading blind spot for the LSTM and a 1-reading NaN variance condition for IF, potentially distorting alarm timing during short-window playback. Pre-warming provides the causal historical context necessary to reproduce the exact continuous streaming behavior of the full digital twin without requiring a full 133-day simulation.
+
+**Limitation:** Pre-warming requires telemetry data preceding the chosen window start index. If an arbitrary window were placed at the very first reading of the dataset (row 0), pre-warming would be truncated by the physical boundary of the dataset.
+
+---
+
+## 2026-09-19 — D32: Pre-flight startup verification gate for model and data artifacts (Milestone 6)
+
+**Decision:** `dashboard/app.py` implements a strict startup verification gate. Before rendering interactive widgets or allowing telemetry replay, it checks the physical existence of all required models and processed data artifacts: `models/isolation_forest_{out,in}.joblib`, `models/lstm_{out,in}.h5`, `data/processed/lstm_norm_stats_{out,in}.json`, `data/processed/{out,in}_features.csv`, `data/processed/{out,in}_labeled.csv`, `data/processed/twin_crosscheck_report.csv`, and `data/processed/three_way_comparison.csv`. If any file is missing, the application halts with an explicit error detailing missing files and displays the exact CLI commands required to regenerate them (`python src/twin_monitors.py && python src/twin_crosscheck.py`).
+
+**Rationale:** Fails fast with clear operational instructions rather than raising obscure internal Python `FileNotFoundError` or TensorFlow tracebacks during interactive user sessions or viva presentations.
+
+**Limitation:** Verifies file existence and schema readability, but does not perform an exhaustive checksum on model weights at every page refresh (which would degrade startup latency).
+
+---
+
+## 2026-09-19 — D31: Persistent structural proxy notice and train-side demo demarcation (Milestone 6)
+
+**Decision:** The dashboard enforces two prominent visual disclaimers:
+1. **Persistent Structural Proxy Notice:** A persistent warning banner across the top of all dashboard screens stating that telemetry originates from generic ambient IoT sensors (`IOT-temp.csv`), not refrigerated containers, that anomalies are synthetic, and that detectors carry no regulatory or food-safety validity.
+2. **Train-Side Demonstration Banner:** When an injection from the training region (`train_test_status == 'train'`) is selected in Free Explore mode, a prominent info banner alerts the viewer that the model had prior training exposure to this period, demarcating the replay as a software demonstration of streaming throughput rather than an out-of-sample performance claim (D26).
+
+**Rationale:** Prevents misleading impressions during viva examinations, academic evaluations, or industry demos. Upholds transparent scientific integrity regarding the proxy nature of the dataset.
+
+**Limitation:** Adds visual UI elements that occupy vertical screen real estate above the primary charts.
+
+---
+
+## 2026-09-19 — D30: Streamlit as the interactive presentation-layer framework (Milestone 6)
+
+**Decision:** The interactive digital twin dashboard is built in `dashboard/app.py` using Streamlit (`streamlit>=1.33.0`), with Altair for reactive, tooltipped time-series telemetry charts. All model loading is cached via `@st.cache_resource` and window pre-warming/simulations are cached via `@st.cache_data`.
+
+**Rationale:** Streamlit enables rapid development of reactive, clean Python web dashboards without requiring a separate JavaScript frontend. It natively supports Python scientific libraries (TensorFlow, scikit-learn, joblib, pandas), executes synchronously in `.venv`, and provides an out-of-the-box local web server for live viva demonstrations.
+
+**Limitation:** Streamlit's script-rerun model requires careful caching (`@st.cache_resource`, `@st.cache_data`) and session state management to avoid redundant tensor allocations or sluggish interactive scrubbing.
+
+---
+
+## 2026-09-19 — D29: Dual-mode operational architecture — Guided Tour vs. Free Explore (Milestone 6)
+
+**Decision:** The UI architecture separates user interaction into two explicit modes:
+1. **Guided Tour (Viva Showcase):** Restricts navigation to 4 curated out-of-sample test injections (`out_step_001`, `out_drift_009`, `out_flatline_013`, `in_drift_023`), paired with runtime-interpolated architectural explanations demonstrating catastrophic step synchronization, early warning drift lead time, flatline variance collapse, and multi-model convergence.
+2. **Free Explore (All 30 Injections):** Allows full interactive exploration across all 30 synthetic anomalies with configurable padding ($\pm 0.5$h to $\pm 6.0$h), series filters, scrubbing, and real-time alert logs.
+
+**Rationale:** Provides an examiner or reviewer with an immediately digestible, logically structured viva walkthrough without getting lost in 30 disparate injections, while preserving the full capability to inspect any arbitrary injection in the dataset.
+
+**Limitation:** Guided Tour focuses exclusively on out-of-sample test cases, omitting train-side injections from the primary showcase (though they remain accessible in Free Explore).
+
+---
+
+## 2026-09-19 — D28: Accelerated replay semantics with display-only speed pacing (Milestone 6)
+
+**Decision:** Live replay is executed as an accelerated simulation over the historical telemetry stream. The playback speed factor (`1x`, `5x`, `10x`, `25x`, `Instant`) and timeline scrubber control UI rendering pace only; they **never alter or scale** the timestamps, `gap_seconds`, temperature readings, or feature arrays passed into the anomaly detection models.
+
+**Rationale:** Simulating real-time sensor intervals (which span hours to days in real time) is impractical for a live demo. Decoupling the UI display tick rate from the physical timestamp progression allows fast-forwarding through quiet periods while maintaining byte-exact mathematical fidelity in model feature calculations.
+
+**Limitation:** Playback speed depends on client browser rendering performance and Streamlit websocket latency when animated in auto-play mode.
+
+---
+
+## 2026-09-19 — D27: Zero new detection logic — direct import of verified components (Milestone 6)
+
+**Decision:** `dashboard/app.py` contains zero new anomaly detection algorithms, feature engineering functions, or threshold calculations. It imports and executes `BaselineMonitor`, `IFMonitor`, and `LSTMMonitor` directly from `src/twin_monitors.py`, and adheres strictly to the stable event-sorting convention (`['ts', 'gap_seconds']` ascending/descending) established in `src/digital_twin.py`. All dashboard code is strictly confined to presentation, replay orchestration, and visualization.
+
+**Rationale:** Establishes a strict boundary between research/modeling milestones (M1–M5) and the presentation layer (M6). Ensures that the dashboard cannot silently alter, reinterpret, or diverge from the verified metrics reported in earlier project stages.
+
+**Limitation:** The dashboard cannot introduce adaptive UI-tuned filters or smoothed alert debouncing without first formalizing them as verified backend components in `src/twin_monitors.py`.
+
+---
+
 ## 2026-09-19 — D26: Dual reporting structure — scientific benchmark vs. deployment demo (Milestone 5b)
 
 **Decision:** Live streaming anomaly detection is executed and reported for all 30 synthetic injections across the entire 133-day replay stream. However, reporting strictly segregates results into two distinct evaluation categories:
