@@ -433,3 +433,26 @@ operational cold-chain telemetry. All downstream modules must carry this
 caveat explicitly.
 
 ---
+
+## 2026-09-21 — D35: Single-source-of-truth point-wise evaluation serialization and consistency guard
+
+**Decision:** Point-wise confusion matrix counts and derived classification metrics (TP, FP, TN, FN, Precision, Recall, F1, FPR, AUC-PR) for both Isolation Forest and LSTM-Autoencoder are serialized directly to structured JSON artifacts (`data/processed/if_pointwise_metrics.json` and `data/processed/lstm_pointwise_metrics.json`) as `{"Out": {...}, "In": {...}}` during pipeline execution (`src/if_evaluation.py` and `src/lstm_evaluation.py`). Both evaluation scripts enforce a permanent regression assertion guard:
+```python
+assert tp + fn == int(y_true.sum()), f"confusion matrix inconsistent for {series_name}: TP+FN={tp+fn} != true anomalies={y_true.sum()}"
+```
+Notebook `notebooks/04_lstm_evaluation.ipynb` cell 8 dynamically loads these JSON files rather than maintaining hardcoded dictionaries.
+
+**Findings & Discrepancies Reconciled:**
+1. *Single-Source-of-Truth Violation:* Previously, point-wise metrics were computed and printed to console in M3/M4b but never written to disk as structured files. This forced subsequent documentation (D7) and presentation artifacts (notebook 04 cell 8) to rely on manual transcription.
+2. *Notebook Transcription & Arithmetic Error:* In `notebooks/04_lstm_evaluation.ipynb` cell 8, the hardcoded `metrics_data` dictionary reported for "IF — Out": `True anomaly rows=65`, `TP=52`, `FP=2720`, `TN=10597`, `FN=3`. This was internally inconsistent ($52 + 3 = 55 \neq 65$). The printed recall ($0.8000$) only reconciled with $\text{FN} = 13$ ($52 / 65 = 0.8000$). Furthermore, the hardcoded $\text{FP}=2720$ ($\text{FPR} = 0.2043$) contradicted D7's cited $\text{FPR} = 45.6\%$.
+3. *Audit Resolution:* Re-running the pipeline from a clean state with the assertion guard confirmed that D7's cited figures were accurate to the underlying model, while the notebook cell 8 dictionary contained transcription errors.
+
+**Corrected Verified Live Metrics (Test Split):**
+- **Isolation Forest — Out:** Total test rows: 13,372; Valid: 13,372; Excluded (NaN): 0; True anomaly rows: 65; $\text{TP} = 52$, $\text{FP} = 6,067$, $\text{TN} = 7,240$, $\text{FN} = 13$; $\text{Precision} = 0.0085$ ($0.85\%$), $\text{Recall} = 0.8000$ ($80.00\%$), $\text{F1} = 0.0168$, $\text{FPR} = 0.4559$ ($45.59\%$), $\text{AUC-PR} = 0.0676$.
+- **Isolation Forest — In:** Total test rows: 3,767; Valid: 3,767; Excluded (NaN): 0; True anomaly rows: 23; $\text{TP} = 21$, $\text{FP} = 1,010$, $\text{TN} = 2,734$, $\text{FN} = 2$; $\text{Precision} = 0.0204$ ($2.04\%$), $\text{Recall} = 0.9130$ ($91.30\%$), $\text{F1} = 0.0398$, $\text{FPR} = 0.2698$ ($26.98\%$), $\text{AUC-PR} = 0.2371$.
+- **LSTM-Autoencoder — Out:** Total test rows: 13,372; Valid: 13,343; Excluded (NaN blind-spot): 29; True anomaly rows: 65; $\text{TP} = 13$, $\text{FP} = 2,722$, $\text{TN} = 10,556$, $\text{FN} = 52$; $\text{Precision} = 0.0048$ ($0.48\%$), $\text{Recall} = 0.2000$ ($20.00\%$), $\text{F1} = 0.0093$, $\text{FPR} = 0.2050$ ($20.50\%$), $\text{AUC-PR} = 0.0049$.
+- **LSTM-Autoencoder — In:** Total test rows: 3,767; Valid: 3,738; Excluded (NaN blind-spot): 29; True anomaly rows: 23; $\text{TP} = 16$, $\text{FP} = 106$, $\text{TN} = 3,609$, $\text{FN} = 7$; $\text{Precision} = 0.1311$ ($13.11\%$), $\text{Recall} = 0.6957$ ($69.57\%$), $\text{F1} = 0.2207$, $\text{FPR} = 0.0285$ ($2.85\%$), $\text{AUC-PR} = 0.3852$.
+
+**Rationale:** Establishes an uncompromised single source of truth across research notebooks, pipeline outputs, and architectural documentation. Precludes silent drift and manual transcription errors by loading verified machine-generated data at runtime.
+
+**Limitation:** Point-wise metrics treat each timestamp independently and penalize early alarms that precede the labeled synthetic injection boundary. They serve as secondary classifier diagnostics; the primary operational metric for cold-chain protection remains the event-level lead time ($\Delta t_{\text{lead}}$).

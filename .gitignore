@@ -12,6 +12,12 @@ data/processed/*.csv
 !data/processed/three_way_comparison.csv
 !data/processed/lstm_pr_curve_out.csv
 !data/processed/lstm_pr_curve_in.csv
+!data/processed/if_pr_curve_out.csv
+!data/processed/if_pr_curve_in.csv
+!data/processed/if_scores_out.csv
+!data/processed/if_scores_in.csv
+!data/processed/if_pointwise_metrics.json
+!data/processed/lstm_pointwise_metrics.json
 !data/processed/twin_replay_log_out.csv
 !data/processed/twin_replay_log_in.csv
 !data/processed/twin_crosscheck_report.csv

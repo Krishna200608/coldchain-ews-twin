@@ -94,6 +94,7 @@ BASELINE_EVAL_CSV         = PROCESSED_DIR / "injection_evaluation_baseline.csv"
 LSTM_EVAL_CSV       = PROCESSED_DIR / "lstm_evaluation.csv"
 PR_CURVE_OUT_CSV    = PROCESSED_DIR / "lstm_pr_curve_out.csv"
 PR_CURVE_IN_CSV     = PROCESSED_DIR / "lstm_pr_curve_in.csv"
+LSTM_POINTWISE_JSON = PROCESSED_DIR / "lstm_pointwise_metrics.json"
 
 
 # ══ D16 Causal Scoring ═════════════════════════════════════════════════════════
@@ -252,6 +253,9 @@ def compute_pointwise_metrics(
         "  TP=%-6d FP=%-6d TN=%-6d FN=%-6d\n"
         "  Precision=%.4f  Recall=%.4f  F1=%.4f  FPR=%.4f  AUC-PR=%.4f",
         series_name, n_excluded, tp, fp, tn, fn, prec, rec, f1, fpr, ap,
+    )
+    assert tp + fn == int(y_true.sum()), (
+        f"confusion matrix inconsistent for {series_name}: TP+FN={tp+fn} != true anomalies={y_true.sum()}"
     )
     return {
         "series": series_name,
@@ -595,6 +599,11 @@ def main() -> None:
             m["precision"], m["recall"], m["f1"], m["fpr"], m["auc_pr"],
             m["n_test_rows_excluded_nan"],
         )
+
+    lstm_pointwise = {m["series"]: m for m in metrics_list}
+    with open(LSTM_POINTWISE_JSON, "w", encoding="utf-8") as f:
+        json.dump(lstm_pointwise, f, indent=2)
+    logger.info("Saved: %s", LSTM_POINTWISE_JSON.name)
 
     # ── Build and save lstm_evaluation.csv ────────────────────────────────────
     eval_df = build_evaluation_table(

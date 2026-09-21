@@ -44,6 +44,7 @@ Outputs:
 
 from __future__ import annotations
 
+import json
 import logging
 import pathlib
 import sys
@@ -84,6 +85,7 @@ BASELINE_EVAL_CSV         = PROCESSED_DIR / "injection_evaluation_baseline.csv"
 IF_EVAL_CSV      = PROCESSED_DIR / "if_evaluation.csv"
 PR_CURVE_OUT_CSV = PROCESSED_DIR / "if_pr_curve_out.csv"
 PR_CURVE_IN_CSV  = PROCESSED_DIR / "if_pr_curve_in.csv"
+IF_POINTWISE_JSON = PROCESSED_DIR / "if_pointwise_metrics.json"
 
 
 # ══ Point-wise metrics ════════════════════════════════════════════════════════
@@ -116,6 +118,9 @@ def compute_pointwise_metrics(df_test: pd.DataFrame, series_name: str) -> dict:
         "  Precision=%.4f  Recall=%.4f  F1=%.4f  FPR=%.4f\n"
         "  AUC-PR (avg precision)=%.4f",
         series_name, tp, fp, tn, fn, prec, rec, f1, fpr, ap,
+    )
+    assert tp + fn == int(y_true.sum()), (
+        f"confusion matrix inconsistent for {series_name}: TP+FN={tp+fn} != true anomalies={y_true.sum()}"
     )
     return {
         "series": series_name,
@@ -330,6 +335,11 @@ def main() -> None:
 
     metrics_out = compute_pointwise_metrics(df_out_test, "Out")
     metrics_in  = compute_pointwise_metrics(df_in_test,  "In")
+
+    if_pointwise = {"Out": metrics_out, "In": metrics_in}
+    with open(IF_POINTWISE_JSON, "w", encoding="utf-8") as f:
+        json.dump(if_pointwise, f, indent=2)
+    logger.info("Saved: %s", IF_POINTWISE_JSON.name)
 
     logger.info("=== POINT-WISE METRICS SUMMARY ===")
     for m in [metrics_out, metrics_in]:
