@@ -11,8 +11,11 @@
 [![AD Log](https://img.shields.io/badge/AD%20Log-35%20Decisions-blue)](docs/AD_LOG.md)
 [![Tests](https://img.shields.io/badge/Tests-Passing-success)](tests/)
 
-> **Quick Links:**  
-> [🌐 **Live Interactive Dashboard**](https://coldchain-ews-twin.streamlit.app/) • [📄 **Full Academic Report (PDF)**](docs/Report/Krishna_Sikheriya_ColdChain_Report.pdf) • [📖 **Plain-English Project Guide**](docs/understand.md) • [📋 **Architectural Decision Log (D1–D35)**](docs/AD_LOG.md)
+> **Quick Links:**
+> - [Live Interactive Dashboard](https://coldchain-ews-twin.streamlit.app/)
+> - [Full Academic Report (PDF)](docs/Report/Krishna_Sikheriya_ColdChain_Report.pdf)
+> - [Plain-English Project Guide](docs/understand.md)
+> - [Architectural Decision Log (D1–D35)](docs/AD_LOG.md)
 
 ---
 
@@ -364,16 +367,16 @@ The project includes an interactive, presentation-grade Streamlit web applicatio
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ ❄️ Cold Chain Disruption Early Warning System — Digital Twin               │
+│ Cold Chain Disruption Early Warning System — Digital Twin                   │
 │ Mode: [ Guided Tour (Viva Showcase) ]  │ Injection: out_drift_009 [TEST]    │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ ⏱️ Replay: 2018-11-04 01:59:00 | 34.2 °C | Status: STREAMING (5x)          │
+│ Replay: 2018-11-04 01:59:00 | 34.2 °C | Status: STREAMING (5x)              │
 │ ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐  │
 │ │ Fixed Baseline       │ │ Isolation Forest     │ │ LSTM-Autoencoder     │  │
 │ │ Alarm: 03:03:00      │ │ Alarm: 01:59:00      │ │ Alarm: 03:17:00      │  │
 │ │ Lead Time: 0.0 min   │ │ Lead Time: +64.0 min │ │ Lead Time: -14.0 min │  │
 │ └──────────────────────┘ └──────────────────────┘ └──────────────────────┘  │
-│ 📈 Real-Time Streaming Telemetry & Alarm Horizon Chart (Altair Declarative) │
+│ Real-Time Streaming Telemetry & Alarm Horizon Chart (Altair Declarative)     │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
