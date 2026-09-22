@@ -14,7 +14,7 @@
 > **Quick Links:**
 > - [Live Interactive Dashboard](https://coldchain-ews-twin.streamlit.app/)
 > - [Full Academic Report (PDF)](docs/Report/Krishna_Sikheriya_ColdChain_Report.pdf)
-> - [Plain-English Project Guide](docs/understand.md)
+> - [Project Guide](docs/understand.md)
 > - [Architectural Decision Log (D1–D35)](docs/AD_LOG.md)
 
 ---
