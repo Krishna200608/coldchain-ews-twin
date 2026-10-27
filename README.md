@@ -198,16 +198,30 @@ coldchain-ews-twin/
 │       └── twin_replay_log_out.csv     # SimPy digital twin simulation log (Out series)
 │
 ├── docs/
-│   ├── AD_LOG.md                       # Architecture Decision Log (decisions D1 through D35)
+│   ├── README.md                       # Documentation navigation index and directory guide
+│   ├── AD_LOG.md                       # Architectural Decision Log (decisions D1 through D35)
+│   ├── understand.md                   # Plain-English conceptual guide to the entire project
 │   ├── data_profile.md                 # Quantitative EDA findings from Milestone 1
-│   ├── Krishna_Sikheriya_Topic21_Synopsis.docx # Academic research synopsis
-│   ├── understand.md                   # Comprehensive plain-English conceptual guide
-│   ├── *.png                           # Publication figures and evaluation plots
-│   └── Report/                         # Academic final report package
-│       ├── Krishna_Sikheriya_ColdChain_Report.pdf  # Compiled full academic report
-│       ├── Krishna_Sikheriya_ColdChain_Report.tex  # Complete LaTeX source (12 chapters)
-│       ├── references.bib              # BibTeX literature citations
-│       └── figures/                    # High-resolution report figures and IIITA logo
+│   ├── Project.md                      # Official Topic 21 Description & Problem Statement
+│   ├── figures/                        # EDA plots, PR curves, and evaluation figures
+│   ├── Progress_Report/                # Progress Report, Overleaf LaTeX source, Presentation deck
+│   │   ├── Progress_Report.pdf         # Compiled publication-ready progress report
+│   │   ├── Progress_Report.md          # Markdown version with metrics & literature review
+│   │   ├── main.tex                    # Overleaf-compilable LaTeX source with TikZ diagrams
+│   │   ├── references.bib              # BibTeX citations for recent papers (2023–2026)
+│   │   ├── Progress_Report_Overleaf.zip# 1-Click Overleaf upload package
+│   │   ├── Presentation.md             # 10-slide presentation deck with spoken cues
+│   │   └── figures/                    # Report-specific figures and TikZ assets
+│   ├── Report/                         # Academic final report package
+│   │   ├── Krishna_Sikheriya_ColdChain_Report.pdf  # Compiled full academic report (12 chapters)
+│   │   ├── Krishna_Sikheriya_ColdChain_Report.tex  # Complete LaTeX source
+│   │   ├── references.bib              # BibTeX literature citations
+│   │   └── figures/                    # High-resolution report figures and IIITA logo
+│   ├── Dataset_Submission/             # Packaged dataset submission archive
+│   │   ├── IOT-temp.csv                # Raw physical telemetry (structural proxy)
+│   │   └── README.md                   # Dataset provenance and schema guide
+│   └── Synopsis/                       # Initial project proposal & synopsis
+│       └── Krishna_Sikheriya_Topic21_Synopsis.docx # Academic research synopsis
 │
 ├── models/
 │   ├── isolation_forest_in.joblib      # Trained Isolation Forest model (In series; tracked)
@@ -307,7 +321,7 @@ Summary of early warning lead times ($\Delta t_{\text{lead}} = t_{\text{irrevers
 | `in_step_018` | In | Step | `17:14` | `17:14` | `17:14` | 0.0 min | 0.0 min | 0.0 min |
 | `in_drift_023` | In | Drift | `08:07` | `07:56` | `08:07` | 0.0 min | **+11.0 min** | 0.0 min |
 
-![Three-Way Lead Times](docs/fig_m4b_three_way_lead_times.png)
+![Three-Way Lead Times](docs/figures/fig_m4b_three_way_lead_times.png)
 
 #### Comparative Lead-Time Insights
 - **Step Excursions:** For abrupt large-magnitude spikes, all three models alarm concurrently at onset ($0.0$ min lead time before the 10-minute irreversibility threshold is reached). Machine learning provides zero early-warning runway when the anomaly is instantaneous.
@@ -336,7 +350,7 @@ Point-wise confusion matrix counts and derived classification metrics are comput
 | **False Positive Rate (FPR)** | **0.4559 (45.59%)** | **0.2050 (20.50%)** | **0.2698 (26.98%)** | **0.0285 (2.85%)** |
 | **AUC-PR** | **0.0676** | **0.0049** | **0.2371** | **0.3852** |
 
-![Precision-Recall Curves](docs/fig_m4b_pr_curves.png)
+![Precision-Recall Curves](docs/figures/fig_m4b_pr_curves.png)
 
 #### Point-Wise Metric Analysis & Literature Context
 1. **The Recall vs. Precision Trade-Off:** Isolation Forest acts as a high-sensitivity tripwire, capturing 80.0% to 91.3% of true anomaly points, but incurs a high false-positive rate (45.6% Out, 27.0% In). In contrast, the LSTM-Autoencoder on the `In` series is highly conservative, suppressing false alarms (FPR = 2.85%) and achieving a precision of 13.11% and an AUC-PR of 0.3852.

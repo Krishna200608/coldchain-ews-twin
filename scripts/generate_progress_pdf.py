@@ -4,9 +4,9 @@ import subprocess
 import mistune
 
 def generate_pdf():
-    md_path = os.path.abspath('docs/Progress_Report.md')
-    pdf_path = os.path.abspath('docs/Progress_Report.pdf')
-    html_path = os.path.abspath('docs/Progress_Report_temp.html')
+    md_path = os.path.abspath('docs/Progress_Report/Progress_Report.md')
+    pdf_path = os.path.abspath('docs/Progress_Report/Progress_Report.pdf')
+    html_path = os.path.abspath('docs/Progress_Report/Progress_Report_temp.html')
 
     with open(md_path, 'r', encoding='utf-8') as f:
         text = f.read()
