@@ -25,24 +25,42 @@
 
 ---
 
-## Slide 2: Problem Statement, Research Gap & Core Objectives
+## Slide 2: Introduction
 
 ### Slide Content
-- **The Operational Challenge:** Cold-chain cargo (vaccines, biologics, food) demands unbroken temperature control (e.g., 2°C to 8°C). A single excursion destroys cargo viability.
-- **The Traditional Failure Mode:** Standard industrial monitoring relies on **static threshold alarms**, alerting only after temperatures exceed fixed limits for sustained durations.
-- **The Post-Hoc Problem:** By the time a static threshold sounds, cumulative thermal exposure has already caused irreversible damage.
-- **The Research Gap:** Prior literature focuses on post-hoc spoilage modeling. Proactive anomaly detection embedded into a live digital twin for quantifiable early-warning lead time remains underexplored.
-- **Core Research Questions:**
-  - **RQ1 (Lead Time):** How many minutes of early warning runway ($\Delta t_{\text{lead}} = t_{\text{irr}} - t_{\text{alarm}}$) can an embedded detector provide?
-  - **RQ2 (Model Comparison):** How does classical Isolation Forest compare to deep LSTM-Autoencoders on irregular sensor telemetry?
-  - **RQ3 (Digital Twin Parity):** Can a live simulation loop run these detectors without silent divergence from offline batch results?
+- **What is Cold Chain Logistics?**
+  - Transportation of temperature-sensitive cargo (vaccines, biologics, perishable foods) requiring unbroken thermal control (e.g., 2°C to 8°C).
+- **The High Stakes of Temperature Excursions:**
+  - A single excursion causes biochemical degradation, loss of pharmaceutical efficacy, or food spoilage—resulting in billions in economic losses annually.
+- **The Traditional Status Quo:**
+  - Standard industrial monitoring relies on **static threshold alarms** that trigger only after temperature exceeds a fixed limit for a sustained duration (e.g., >8°C for 10–15 minutes).
+- **The Core Flaw (The Post-Hoc Problem):**
+  - By the time a static threshold alarm sounds, cumulative thermal exposure has already caused **irreversible spoilage**. Traditional monitoring is fundamentally reactive.
 
 ### Spoken Presenter Cue (What to say)
-> "In cold-chain logistics, waiting for an alarm to cross a fixed threshold is fundamentally reactive—by the time it sounds, irreversible damage has often already occurred. Our research tackles this gap by asking: can an event-driven digital twin catch the subtle precursor symptoms, such as compressor drift or variance loss, before the failure boundary is crossed? We evaluate exactly how many minutes of early warning we can gain, compare classical vs deep learning detectors, and verify simulation fidelity."
+> "In cold-chain logistics, temperature control is non-negotiable—a single temperature excursion can render an entire batch of vaccines or biologics completely useless. The fundamental problem with today's commercial monitoring is that it relies on static threshold alarms. These alarms only go off after temperatures have already breached safe limits for 10 or 15 minutes. By that time, cumulative heat exposure has already caused irreversible damage. It is a fundamentally reactive approach."
 
 ---
 
-## Slide 3: Relevant Literature Review (Recent Key Papers)
+## Slide 3: Research Gap and Core Objectives
+
+### Slide Content
+- **The Academic Research Gap:**
+  - Prior cold-chain research focuses almost exclusively on **post-hoc shelf-life / spoilage modeling** (calculating quality loss after an excursion has concluded).
+  - Proactive, real-time anomaly detection embedded within an event-driven digital twin to deliver quantifiable **early-warning runway ($\Delta t_{\text{lead}}$)** is underexplored.
+- **Proposed Solution:**
+  - Develop a digital twin simulation loop embedding unsupervised and sequential deep learning models to catch precursor thermal anomalies before irreversible failure occurs.
+- **Core Research Questions:**
+  - **RQ1 (Early Warning Runway):** How many minutes of early warning runway ($\Delta t_{\text{lead}} = t_{\text{irr}} - t_{\text{alarm}}$) can embedded machine learning provide?
+  - **RQ2 (Model Comparison):** How does classical Isolation Forest compare to deep LSTM-Autoencoders on irregular sensor telemetry?
+  - **RQ3 (Simulation Fidelity):** Can a live simulation loop run these detectors without silent divergence from offline batch evaluation?
+
+### Spoken Presenter Cue (What to say)
+> "This brings us to our research gap: existing academic literature focuses almost entirely on post-hoc quality decay models—telling you how much damage occurred after the fact. Our objective was to shift from post-hoc damage calculation to real-time early warning. We formulated three core research questions: First, how many minutes of operational runway can an embedded anomaly detector give us before irreversible failure? Second, how does a classical Isolation Forest compare against a deep LSTM-Autoencoder? And third, can a digital twin run these models in live simulation without diverging from offline batch results?"
+
+---
+
+## Slide 4: Relevant Literature Review (Recent Key Papers)
 
 ### Slide Content
 **Key Recent Benchmark Papers Grounding Our Research (2023–2026):**
@@ -68,14 +86,14 @@
 
 ---
 
-## Slide 4: Data Strategy & Structural Proxy Framing
+## Slide 5: Data Strategy & Structural Proxy Framing
 
 ### Slide Content
 - **Dataset:** Kaggle `atulanandjha/temperature-readings-iot-devices` (`IOT-temp.csv`, 97,606 readings, 133 days).
 - **Realistic Irregularity:** Inter-arrival gaps have a Coefficient of Variation $\text{CoV} = 46.23$ (Mean: 117.8 s, Median: 0 s, Dropouts up to 11.5 days).
 - **Dual Streams:** Separated into ambient (`Out`, 77,260 rows) and internal enclosure (`In`, 20,345 rows).
 - **Academic Rigor (Structural Proxy Notice):**
-  - This is generic IoT telemetry, not real reefer truck sensors.
+  - This is generic IoT telemetry (`Room Admin`), not real reefer truck sensors.
   - We use it strictly as an experimental **structural proxy** to test streaming integration and irregular arrival dynamics without making ungrounded food-safety claims.
 
 ### Spoken Presenter Cue (What to say)
@@ -83,7 +101,7 @@
 
 ---
 
-## Slide 5: System Architecture & The Digital Twin
+## Slide 6: System Architecture & The Digital Twin
 
 ### Slide Content
 - **Ingestion & Feature Engineering:** Causal timestamp parsing (`dayfirst=True`) and trailing rolling features (zero look-ahead leakage).
@@ -101,7 +119,7 @@
 
 ---
 
-## Slide 6: Experimental Setup & Anomaly Protocol
+## Slide 7: Experimental Setup & Anomaly Protocol
 
 ### Slide Content
 - **Controlled Perturbation Injection (30 Events, Seed 42):**
@@ -118,7 +136,7 @@
 
 ---
 
-## Slide 7: Core Result 1 — Early-Warning Lead Times
+## Slide 8: Core Result 1 — Early-Warning Lead Times
 
 ### Slide Content
 **Lead Time on Out-of-Sample Test Injections ($\Delta t = t_{\text{irr}} - t_{\text{alarm}}$):**
@@ -142,40 +160,22 @@
 
 ---
 
-## Slide 8: Core Result 2 — Classification Trade-offs
+## Slide 9: Core Result 2 — Classification Trade-offs & Simulation Parity
 
 ### Slide Content
-**Point-Wise Classification Metrics on Test Split (D35 Single Source of Truth):**
-
-- **Isolation Forest:**
-  - High Recall: **80.0%** (`Out`), **91.3%** (`In`)
-  - Trade-off: High False Positive Rate (**45.6%** `Out`, **27.0%** `In`)
-  - Operational Role: Aggressive, high-sensitivity early tripwire.
-- **LSTM-Autoencoder:**
-  - Precision-Favoring on `In`: **13.11%** Precision, **2.85%** False Positive Rate, **0.3852** AUC-PR
-  - Trade-off: Lower recall on `Out` (20.0%, AUC-PR 0.0049)
-  - Operational Role: Conservative secondary verifier.
-- **Prevalence Context:** With true anomalies representing only ~0.5% of rows, lower absolute F1 scores are mathematically expected under class imbalance, not a model defect.
-
-### Spoken Presenter Cue (What to say)
-> "When looking at point-wise metrics, we see a classic engineering trade-off: Isolation Forest acts as an aggressive tripwire with high recall over 80–90%, but at the cost of a higher false-alarm rate. In contrast, the LSTM is highly conservative on the In series with a 2.85% false-positive rate and higher precision. Neither detector universally dominates, showing why hybrid architectures are valuable."
-
----
-
-## Slide 9: Digital Twin Parity & Live Interactive Dashboard
-
-### Slide Content
-- **100% Live / Batch Cross-Check Parity:**
-  - SimPy digital twin replayed 97,603 readings in 6.03 seconds of CPU execution.
+- **Point-Wise Classification Metrics on Test Split (D35 Data):**
+  - **Isolation Forest (High-Recall Tripwire):** Recall 80.0% (`Out`), 91.3% (`In`); FPR 45.6% (`Out`), 27.0% (`In`). Captures anomalies aggressively.
+  - **LSTM-Autoencoder (Precision-Favoring Verifier):** On `In` series: 13.11% Precision, 2.85% FPR, 0.3852 AUC-PR. Suppresses false alarms, but exhibits adaptation lag on drift.
+  - **Prevalence Context:** With true anomalies representing only ~0.5% of rows, lower absolute F1 scores are mathematically expected under extreme class imbalance.
+- **100% Bit-for-Bit Live/Batch Parity:**
+  - SimPy digital twin replayed 97,603 readings in 6.03 s CPU time ($>1.9\text{M}\times$ speedup) with **0.00 s virtual clock drift**.
   - Across 30 injections $\times$ 3 monitors, all **42 applicable test evaluations matched bit-for-bit** with offline batch evaluation (0 mismatches).
 - **Live Streamlit Cloud Deployment:**
-  - **Public Link:** `https://coldchain-ews-twin.streamlit.app/`
-  - **Guided Tour Mode:** 4-step sequence curated for viva demonstrations.
-  - **Free Explore Mode:** Interactive inspection of all 30 injections with clear `[TEST]` vs `[TRAIN DEMO]` tagging.
-  - **Zero Duplication:** Directly imports verified detection logic from `src/twin_monitors.py`.
+  - Public URL: `https://coldchain-ews-twin.streamlit.app/`
+  - Features Guided Tour mode for presentations and Free Explore mode for interactive tuning.
 
 ### Spoken Presenter Cue (What to say)
-> "To prove that embedding these models in a simulation loop doesn't cause silent discrepancies, our automated cross-check report achieved a 100% exact match across all 42 applicable comparisons. Furthermore, the entire system is deployed live on Streamlit Cloud, featuring an interactive Guided Tour designed specifically for viva examination walkthroughs."
+> "Looking at point-wise metrics, we see a classic engineering trade-off: Isolation Forest acts as an aggressive tripwire with high recall over 80–90%, while the LSTM is highly conservative with a 2.85% false-positive rate on enclosure data. Neither detector universally dominates, demonstrating why hybrid architectures are valuable. Crucially, our automated cross-check report achieved a 100% exact match across all 42 comparisons between live SimPy replay and offline batch results, and the entire system is deployed live on Streamlit Cloud."
 
 ---
 
