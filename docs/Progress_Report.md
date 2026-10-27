@@ -42,7 +42,21 @@ Cold-chain literature predominantly focuses on **post-hoc shelf-life / spoilage 
 
 ---
 
-## 3. Data Strategy and Structural Proxy Notice
+## 3. Relevant Literature Review & Benchmark Foundations (Recent Papers 2023–2026)
+
+Our research is grounded in recent literature spanning cold-chain digital twins, industrial IoT streaming, and machine-learning anomaly detection:
+
+| Study | Publication Venue | Core Contribution | Direct Relevance to Our Project |
+|---|---|---|---|
+| **Vukšić et al. (2026)** | *Applied Sciences* (MDPI) | Hybrid physics-based digital twin + convolutional autoencoder for reefer containers. | Reports median lead time of **~68 minutes**, providing independent corroboration for our **64-minute** early warning on drift disruptions. |
+| **Xie et al. (2025)** | *PLOS ONE* | Improved Isolation Forest (subsampling + cross-grouping) for multi-sensor cold-chain fleet telemetry. | Benchmarks tree-based streaming anomaly detection in cold-chain logistics; contextualizes our single-channel point-wise F1 metrics. |
+| **Meng et al. (2024)** | *Journal of Food Engineering* (Elsevier) | Cost-effective box-level digital twin temperature modeling + pallet alarms. | Exemplifies the static threshold-alarm paradigm that our proactive, model-embedded early warning system benchmarks against. |
+| **Wu et al. (2023)** | *Journal of Industrial Information Integration* (Elsevier) | Internet-of-Everything and Digital-Twin-enabled service platform for cold-chain logistics. | Establishes architectural precedent for embedding AI models into live digital-twin data pipelines at platform scale. |
+| **Defraeye et al. (2023)** | *Computers and Electronics in Agriculture* / *J. Food Eng.* | Comprehensive review of digital twins in food cold chains and postharvest operations. | Identifies the fundamental research gap: transitioning from post-hoc quality assessments to live, event-driven anomaly early-warning systems. |
+
+---
+
+## 4. Data Strategy and Structural Proxy Notice
 
 - **Dataset Source:** Kaggle `atulanandjha/temperature-readings-iot-devices` (`IOT-temp.csv`, 6.63 MB, 97,606 raw readings).
 - **Timeframe:** July 28, 2018 to December 8, 2018 (133 continuous days, 27,920 unique minute timestamps).
@@ -51,7 +65,7 @@ Cold-chain literature predominantly focuses on **post-hoc shelf-life / spoilage 
 
 ---
 
-## 4. Methodology and System Architecture
+## 5. Methodology and System Architecture
 
 1. **Ingestion & Causal Preprocessing (`src/preprocessing.py`):**
    - Corrected critical day-first timestamp parsing (`dayfirst=True`, preventing 48.8% silent parse failures).
@@ -75,7 +89,7 @@ Cold-chain literature predominantly focuses on **post-hoc shelf-life / spoilage 
 
 ---
 
-## 5. Experimental Results and Performance Benchmark
+## 6. Experimental Results and Performance Benchmark
 
 ### Table 1: Early-Warning Lead Time Comparison (Test Split Injections)
 $$\Delta t_{\text{lead}} = t_{\text{irreversibility}} - t_{\text{alarm}} \quad (\text{positive = early warning; negative = late})$$
@@ -109,7 +123,7 @@ $$\Delta t_{\text{lead}} = t_{\text{irreversibility}} - t_{\text{alarm}} \quad (
 
 ---
 
-## 6. Technical Deliverables Completed
+## 7. Technical Deliverables Completed
 
 | Deliverable | Location in Repository | Description | Status |
 |---|---|---|---|
@@ -124,13 +138,13 @@ $$\Delta t_{\text{lead}} = t_{\text{irreversibility}} - t_{\text{alarm}} \quad (
 
 ---
 
-## 7. Technical Readiness Assessment
+## 8. Technical Readiness Assessment
 
 **Is the project complete technically?**  
 **Yes, 100% complete.** There are zero unfinished code files, broken imports, missing weights, or failing tests. The entire pipeline reproduces from a clean state via standard terminal commands, and the interactive digital twin is deployed and publicly accessible online.
 
 ---
 
-## 8. Presentation Readiness
+## 9. Presentation Readiness
 
 For tomorrow's classroom presentation, the technical findings have been distilled into a crisp, 10-slide presentation deck documented in [`docs/Presentation.md`](Presentation.md), complete with slide structures, bullet points, and spoken cues.

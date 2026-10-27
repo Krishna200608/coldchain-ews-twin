@@ -25,29 +25,46 @@
 
 ---
 
-## Slide 2: The Problem & Research Gap
+## Slide 2: Problem Statement, Research Gap & Core Objectives
 
 ### Slide Content
-- **The Cold-Chain Dilemma:** Vaccines, pharmaceuticals, and fresh produce require strict continuous temperature bands (e.g., 2°C to 8°C). A single excursion destroys cargo value.
-- **The Traditional Failure Mode:** Standard industrial systems rely on **static threshold alarms** (e.g., alarm after temperature stays above limit for prolonged minutes).
-- **The Post-Hoc Problem:** By the time a static threshold sounds, cumulative thermal exposure has already spoiled the goods.
-- **The Research Gap:** Literature focuses heavily on post-hoc spoilage modeling. Embedding real-time anomaly detection into an event-driven digital twin for proactive early warning is underexplored.
+- **The Operational Challenge:** Cold-chain cargo (vaccines, biologics, food) demands unbroken temperature control (e.g., 2°C to 8°C). A single excursion destroys cargo viability.
+- **The Traditional Failure Mode:** Standard industrial monitoring relies on **static threshold alarms**, alerting only after temperatures exceed fixed limits for sustained durations.
+- **The Post-Hoc Problem:** By the time a static threshold sounds, cumulative thermal exposure has already caused irreversible damage.
+- **The Research Gap:** Prior literature focuses on post-hoc spoilage modeling. Proactive anomaly detection embedded into a live digital twin for quantifiable early-warning lead time remains underexplored.
+- **Core Research Questions:**
+  - **RQ1 (Lead Time):** How many minutes of early warning runway ($\Delta t_{\text{lead}} = t_{\text{irr}} - t_{\text{alarm}}$) can an embedded detector provide?
+  - **RQ2 (Model Comparison):** How does classical Isolation Forest compare to deep LSTM-Autoencoders on irregular sensor telemetry?
+  - **RQ3 (Digital Twin Parity):** Can a live simulation loop run these detectors without silent divergence from offline batch results?
 
 ### Spoken Presenter Cue (What to say)
-> "In cold-chain logistics, waiting for an alarm to breach a fixed temperature ceiling is fundamentally reactive. By the time an operator is notified, the vaccine or cargo has often already suffered irreversible thermal degradation. Our research addresses this gap by asking: can we catch the *precursor symptoms*—like compressor drift or variance loss—before the critical boundary is crossed?"
+> "In cold-chain logistics, waiting for an alarm to cross a fixed threshold is fundamentally reactive—by the time it sounds, irreversible damage has often already occurred. Our research tackles this gap by asking: can an event-driven digital twin catch the subtle precursor symptoms, such as compressor drift or variance loss, before the failure boundary is crossed? We evaluate exactly how many minutes of early warning we can gain, compare classical vs deep learning detectors, and verify simulation fidelity."
 
 ---
 
-## Slide 3: Research Questions & Core Objectives
+## Slide 3: Relevant Literature Review (Recent Key Papers)
 
 ### Slide Content
-- **Primary Objective:** Build an event-driven digital twin that streams real IoT telemetry and raises early alarms before irreversible failure.
-- **RQ1 (Lead Time):** How early (in minutes) can an embedded anomaly detector flag disruptions relative to when spoilage becomes irreversible?
-- **RQ2 (Model Comparison):** How does classical unsupervised learning (Isolation Forest) compare against deep sequential learning (LSTM-Autoencoder)?
-- **RQ3 (Simulation Fidelity):** Does embedding models in a live simulation loop introduce latency or silent divergence compared to offline batch evaluation?
+**Key Recent Benchmark Papers Grounding Our Research (2023–2026):**
+
+1. **Vukšić et al. (2026, *Applied Sciences*):**  
+   *Early Anomaly Detection in Maritime Refrigerated Containers Using a Hybrid Digital Twin and Deep Learning.*  
+   • Combines reefer digital twin with autoencoders; reports median lead time of **~68 minutes**, independently corroborating our **64-minute** lead time on drift disruptions.
+2. **Xie et al. (2025, *PLOS ONE*):**  
+   *An Anomaly Detection Scheme for Data Stream in Cold Chain Logistics.*  
+   • Implements improved Isolation Forest on cold-chain fleet telemetry; benchmarks tree-based streaming anomaly detection and contextualizes point-wise metrics.
+3. **Meng et al. (2024, *Journal of Food Engineering*):**  
+   *A Cost-Effective Over-Temperature Alarm System for Cold Chain Delivery.*  
+   • Demonstrates box-level digital twin temperature modeling, exemplifying the threshold-alarm paradigm our proactive anomaly-detection system benchmarks against.
+4. **Wu et al. (2023, *Journal of Industrial Information Integration*):**  
+   *Internet of Everything and Digital Twin Enabled Service Platform for Cold Chain Logistics.*  
+   • Establishes architectural precedent for embedding AI models into live digital-twin data pipelines at platform scale.
+5. **Defraeye et al. (2023, *Journal of Food Engineering* / *Comput. Electron. Agric.*):**  
+   *Digital Twins of Food Cold Chains: Advances, Challenges, and Opportunities.*  
+   • Highlights the critical need to transition from post-harvest post-hoc quality assessments to live, event-driven anomaly early warning.
 
 ### Spoken Presenter Cue (What to say)
-> "We structured our project around three specific, falsifiable research questions: First, how many minutes of actionable early warning lead time do we actually gain? Second, how does a lightweight, tree-based Isolation Forest compare to a deep sequential LSTM-Autoencoder? And third, can a digital twin run these models live without drifting from offline batch results?"
+> "Our work is grounded in recent literature from top journals in food engineering and industrial systems. Crucially, Vukšić et al. in 2026 demonstrated a 68-minute lead time using deep learning on maritime reefer containers, which independently corroborates our finding of a 64-minute lead time on drift faults. Furthermore, Xie et al. in 2025 benchmarked Isolation Forest on cold-chain fleets, while Meng et al. in 2024 in the Journal of Food Engineering and Wu et al. in 2023 established the digital twin framework we build upon."
 
 ---
 
