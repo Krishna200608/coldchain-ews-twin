@@ -23,12 +23,17 @@ docs/
 ├── Project.md                      # Official Topic 21 prompt & problem brief from course supervisor
 │
 ├── Progress_Report/                # Progress Report, Overleaf LaTeX package & Presentation deck
-│   ├── Progress_Report.pdf         # Compiled publication-ready progress report (310 KB)
+│   ├── Presentation.pptx           # PowerPoint 16:9 widescreen presentation with figures & speaker notes
+│   ├── Presentation.pdf            # Compiled 16:9 widescreen presentation PDF ready for projection
+│   ├── Presentation.html           # Interactive browser presentation deck with keyboard navigation & cues
+│   ├── presentation.tex            # Overleaf-compilable LaTeX Beamer deck with TikZ vector diagrams
+│   ├── Presentation_Overleaf.zip   # 1-Click ready-to-upload archive for Overleaf Beamer slides (2.11 MB)
+│   ├── Presentation.md             # 10-slide presentation deck with spoken presenter cues
+│   ├── Progress_Report.pdf         # Compiled publication-ready progress report document (310 KB)
 │   ├── Progress_Report.md          # Markdown progress report with lead-time tables & literature review
 │   ├── main.tex                    # Overleaf-compilable LaTeX source with custom TikZ flowcharts
 │   ├── references.bib              # BibTeX literature citations (recent papers 2023–2026)
-│   ├── Progress_Report_Overleaf.zip# 1-Click ready-to-upload archive for Overleaf (2.11 MB)
-│   ├── Presentation.md             # 10-slide presentation deck with spoken presenter cues
+│   ├── Progress_Report_Overleaf.zip# 1-Click ready-to-upload archive for Overleaf report (2.11 MB)
 │   └── figures/                    # High-res report figures, TikZ assets & IIITA emblem
 │
 ├── Report/                         # Comprehensive Academic Final Report
@@ -64,10 +69,15 @@ docs/
 ## Deliverables Summary
 
 ### 1. Progress Report & Defense Deck ([`docs/Progress_Report/`](Progress_Report/))
-- **Compiled PDF:** [`Progress_Report.pdf`](Progress_Report/Progress_Report.pdf) — Formatted with professional academic typography, mathematical formulations, and complete lead-time tables.
-- **Overleaf Source:** [`main.tex`](Progress_Report/main.tex) — Features three custom **TikZ vector diagrams** (System Pipeline, Operational Lead-Time Timeline, and LSTM-Autoencoder Architecture).
-- **1-Click Overleaf Zip:** [`Progress_Report_Overleaf.zip`](Progress_Report/Progress_Report_Overleaf.zip) — Ready to upload directly to Overleaf for instant compilation.
-- **Presentation Deck:** [`Presentation.md`](Progress_Report/Presentation.md) — 10-slide presentation deck covering Problem, Literature Review (5 recent papers 2023–2026), Architecture, Lead-Time Benchmarks, and Spoken Cues.
+- **PowerPoint Presentation:** [`Presentation.pptx`](Progress_Report/Presentation.pptx) — Professional 16:9 widescreen presentation with embedded figures, styled tables, and native PowerPoint speaker notes matching spoken cues verbatim.
+- **Compiled Slide PDF:** [`Presentation.pdf`](Progress_Report/Presentation.pdf) — Ready-to-project 16:9 widescreen presentation PDF (3.41 MB).
+- **Interactive Browser Deck:** [`Presentation.html`](Progress_Report/Presentation.html) — Standalone presentation with keyboard controls (Arrow Keys, Space) and presenter cue toggle ('C').
+- **Overleaf Beamer Source:** [`presentation.tex`](Progress_Report/presentation.tex) — Complete LaTeX Beamer deck with custom IIITA theme and TikZ vector flowcharts.
+- **1-Click Beamer Overleaf Zip:** [`Presentation_Overleaf.zip`](Progress_Report/Presentation_Overleaf.zip) — Ready to import into Overleaf for instant Beamer compilation.
+- **Slide Script & Spoken Cues:** [`Presentation.md`](Progress_Report/Presentation.md) — 10-slide outline with slide content and spoken cues.
+- **Progress Report PDF:** [`Progress_Report.pdf`](Progress_Report/Progress_Report.pdf) — Publication-grade technical progress report document (310 KB).
+- **Progress Report Overleaf Source:** [`main.tex`](Progress_Report/main.tex) & [`references.bib`](Progress_Report/references.bib) — Formal LaTeX progress report with TikZ flowcharts.
+- **1-Click Report Overleaf Zip:** [`Progress_Report_Overleaf.zip`](Progress_Report/Progress_Report_Overleaf.zip) — Ready to upload directly to Overleaf for instant report compilation.
 
 ### 2. Final Academic Report ([`docs/Report/`](Report/))
 - **Compiled PDF:** [`Krishna_Sikheriya_ColdChain_Report.pdf`](Report/Krishna_Sikheriya_ColdChain_Report.pdf) — Comprehensive 12-chapter monograph detailing the theoretical foundations of cold-chain thermodynamics, tree partition algorithms, recurrent autoencoders, discrete-event SimPy simulation, and empirical single-source-of-truth evaluations.
