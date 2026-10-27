@@ -721,7 +721,50 @@ def build_deck():
     <strong>Presenter Cue:</strong> "To conclude: this project bridges machine learning, discrete-event digital twins, and disciplined corporate entrepreneurship. We demonstrated where classical ML provides real runway, where deep learning lags, and how to evaluate technology under uncertainty. Thank you!"
   </div>
   <div class="footer">
-    <span>Slide 10 of 10</span>
+    <span>Slide 10 of 11</span>
+    <span>Krishna Sikheriya (IIT2023139) | IIIT Allahabad</span>
+  </div>
+</div>
+
+<!-- SLIDE 11: REFERENCES & BENCHMARK LITERATURE -->
+<div class="slide" id="slide-11">
+  <div class="header">
+    <div>
+      <h1>References &amp; Benchmark Literature</h1>
+      <p>Peer-Reviewed Foundations (2023–2026), Machine Learning Benchmarks &amp; Project Assets</p>
+    </div>
+    <img src="figures/iiit_allahabad_logo.png" class="header-logo" alt="Logo">
+  </div>
+  <div class="content-grid">
+    <div class="card card-blue">
+      <h2>Recent Cold-Chain Benchmarks (2023–2026)</h2>
+      <ol style="font-size: 9.5pt; line-height: 1.5; padding-left: 18px; color: #1e293b;">
+        <li style="margin-bottom: 8px;"><strong>Vukšić et al. (2026):</strong> Early Anomaly Detection in Maritime Refrigerated Containers Using a Hybrid Digital Twin and Deep Learning Framework. <em>Applied Sciences</em>, 16(4), 1887.</li>
+        <li style="margin-bottom: 8px;"><strong>Xie et al. (2025):</strong> An Anomaly Detection Scheme for Data Stream in Cold Chain Logistics. <em>PLOS ONE</em>, 20(3), e0315322.</li>
+        <li style="margin-bottom: 8px;"><strong>Meng et al. (2024):</strong> A Cost-Effective Over-Temperature Alarm System for Cold Chain Delivery. <em>Journal of Food Engineering</em>, 368, 111914.</li>
+        <li style="margin-bottom: 8px;"><strong>Wu et al. (2023):</strong> Internet of Everything and Digital Twin Enabled Service Platform for Cold Chain Logistics. <em>Journal of Industrial Information Integration</em>, 33, 100443.</li>
+        <li style="margin-bottom: 8px;"><strong>Defraeye et al. (2023):</strong> Digital Twins of Food Cold Chains: Advances, Challenges, and Opportunities. <em>Computers and Electronics in Agriculture</em>, 214, 108252.</li>
+      </ol>
+    </div>
+    <div class="card card-white">
+      <h2 class="accent">Foundations &amp; Project Links</h2>
+      <ol start="6" style="font-size: 9.5pt; line-height: 1.5; padding-left: 18px; color: #1e293b;">
+        <li style="margin-bottom: 8px;"><strong>Liu, Ting, &amp; Zhou (2008):</strong> Isolation Forest. <em>2008 Eighth IEEE International Conference on Data Mining (ICDM)</em>, 413–422.</li>
+        <li style="margin-bottom: 8px;"><strong>Malhotra et al. (2016):</strong> LSTM-based Encoder-Decoder for Multi-sensor Anomaly Detection. <em>ICML 2016 Anomaly Detection Workshop</em>.</li>
+        <li style="margin-bottom: 8px;"><strong>Anand Jha (2018):</strong> Temperature Readings: IoT Devices Telemetry Dataset. <em>Kaggle Datasets</em>.</li>
+      </ol>
+      <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 10pt; color: #334155;">
+        <p style="margin-bottom: 6px;">&bull; <strong>Live Web App:</strong> <a href="https://coldchain-ews-twin.streamlit.app/" target="_blank" style="color: #0284c7; font-weight: 600;">coldchain-ews-twin.streamlit.app</a></p>
+        <p style="margin-bottom: 6px;">&bull; <strong>Repository:</strong> <a href="https://github.com/Krishna200608/coldchain-ews-twin" target="_blank" style="color: #0284c7; font-weight: 600;">github.com/Krishna200608/coldchain-ews-twin</a></p>
+        <p>&bull; <strong>Affiliation:</strong> Department of Information Technology, IIIT Allahabad</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue-box">
+    <strong>Presenter Cue:</strong> "Finally, our research is thoroughly grounded in contemporary peer-reviewed literature across food engineering, industrial digital twins, and machine learning. Here are the core benchmark references supporting our methodology and empirical findings. Thank you, and I am now happy to take any questions."
+  </div>
+  <div class="footer">
+    <span>Slide 11 of 11</span>
     <span>Krishna Sikheriya (IIT2023139) | IIIT Allahabad</span>
   </div>
 </div>
@@ -735,7 +778,7 @@ def build_deck():
 
 <script>
   let currentSlide = 1;
-  const totalSlides = 10;
+  const totalSlides = 11;
 
   function showSlide(num) {
     if (num < 1) num = 1;

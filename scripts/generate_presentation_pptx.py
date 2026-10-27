@@ -768,6 +768,79 @@ def create_deck():
         "Thank you, and I look forward to your questions."
     ))
 
+    # ==========================================================================
+    # SLIDE 11: REFERENCES & BENCHMARK LITERATURE
+    # ==========================================================================
+    slide11 = add_base_slide("References & Benchmark Literature")
+
+    # Left Card: Recent Papers
+    card_ref1 = slide11.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.4), Inches(5.6), Inches(5.4))
+    card_ref1.fill.solid()
+    card_ref1.fill.fore_color.rgb = COLOR_LIGHT_BG
+    card_ref1.line.color.rgb = COLOR_BORDER
+    tf_r1 = card_ref1.text_frame
+    tf_r1.word_wrap = True
+
+    p = tf_r1.paragraphs[0]
+    p.text = "Recent Cold-Chain Benchmarks (2023–2026)"
+    p.font.name = "Calibri"
+    p.font.size = Pt(15)
+    p.font.bold = True
+    p.font.color.rgb = COLOR_NAVY
+    p.space_after = Pt(8)
+
+    refs1 = [
+        "1. Vukšić, M., Ćelić, J., Ogrizović, D., & Perić Hadžić, A. (2026). Early Anomaly Detection in Maritime Refrigerated Containers Using a Hybrid Digital Twin and Deep Learning Framework. Applied Sciences, 16(4), 1887.",
+        "2. Xie, Z., Long, H., Ling, C., Zhou, Y., & Luo, Y. (2025). An Anomaly Detection Scheme for Data Stream in Cold Chain Logistics. PLOS ONE, 20(3), e0315322.",
+        "3. Meng, X., Xie, R., Liao, J., Shen, X., & Yang, S. (2024). A Cost-Effective Over-Temperature Alarm System for Cold Chain Delivery. Journal of Food Engineering, 368, 111914.",
+        "4. Wu, W., Shen, L., Zhao, Z., Harish, A. R., Zhong, R. Y., & Huang, G. Q. (2023). Internet of Everything and Digital Twin Enabled Service Platform for Cold Chain Logistics. Journal of Industrial Information Integration, 33, 100443.",
+        "5. Defraeye, T., Shrivastava, C., Berry, T., Verboven, P., Onwude, D., Schudel, S., et al. (2023). Digital Twins of Food Cold Chains: Advances, Challenges, and Opportunities. Computers and Electronics in Agriculture, 214, 108252."
+    ]
+    for r in refs1:
+        bp = tf_r1.add_paragraph()
+        bp.text = r
+        bp.font.size = Pt(9.5)
+        bp.font.color.rgb = COLOR_DARK
+        bp.space_after = Pt(6)
+
+    # Right Card: Foundational Algorithms & Links
+    card_ref2 = slide11.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.8), Inches(1.4), Inches(5.7), Inches(5.4))
+    card_ref2.fill.solid()
+    card_ref2.fill.fore_color.rgb = COLOR_WHITE
+    card_ref2.line.color.rgb = COLOR_BLUE
+    card_ref2.line.width = Pt(1.5)
+    tf_r2 = card_ref2.text_frame
+    tf_r2.word_wrap = True
+
+    p = tf_r2.paragraphs[0]
+    p.text = "Foundational Algorithms & Project Assets"
+    p.font.name = "Calibri"
+    p.font.size = Pt(15)
+    p.font.bold = True
+    p.font.color.rgb = COLOR_BLUE
+    p.space_after = Pt(8)
+
+    refs2 = [
+        "6. Liu, F. T., Ting, K. M., & Zhou, Z.-H. (2008). Isolation Forest. 2008 Eighth IEEE International Conference on Data Mining (ICDM), 413–422.",
+        "7. Malhotra, P., Ramakrishnan, A., Anand, G., Vig, L., Agarwal, P., & Shroff, G. (2016). LSTM-based Encoder-Decoder for Multi-sensor Anomaly Detection. ICML 2016 Anomaly Detection Workshop.",
+        "8. Anand Jha, A. (2018). Temperature Readings: IoT Devices Telemetry Dataset. Kaggle Datasets (Structural Proxy Dataset).",
+        "\n• Live Deployed Dashboard: https://coldchain-ews-twin.streamlit.app/",
+        "• Open-Source Code Repository: https://github.com/Krishna200608/coldchain-ews-twin",
+        "• Institution: Department of Information Technology, IIIT Allahabad"
+    ]
+    for r in refs2:
+        bp = tf_r2.add_paragraph()
+        bp.text = r
+        bp.font.size = Pt(10)
+        bp.font.color.rgb = COLOR_DARK
+        bp.space_after = Pt(6)
+
+    set_speaker_notes(slide11, (
+        "Finally, our research is thoroughly grounded in contemporary peer-reviewed literature across food engineering, "
+        "industrial digital twins, and machine learning. Here are the core benchmark references supporting our methodology "
+        "and empirical findings. Thank you, and I am now happy to take any questions."
+    ))
+
     # Save Presentation
     output_path = os.path.abspath("docs/Progress_Report/Presentation.pptx")
     prs.save(output_path)

@@ -433,3 +433,50 @@ Live Deployed Dashboard: coldchain-ews-twin.streamlit.app
 
 ### Spoken Presenter Cue (What to say)
 > "To conclude: this project bridges machine learning, discrete-event digital twins, and disciplined corporate entrepreneurship. We did not cherry-pick our data or claim artificial perfection—we demonstrated exactly where classical ML provides real operational runway, where deep learning lags, and how an organization can rigorously evaluate technology under uncertainty. Thank you, and I look forward to your questions."
+
+---
+
+## Slide 11: References & Benchmark Literature
+
+### Recommended Canva Layout
+- **Style:** 2-Card Horizontal Split (Left Card: Recent Cold-Chain Literature 2023–2026 | Right Card: Foundational ML & Project Assets).
+- **Icons to search in Canva:** `books literature`, `citation quote`, `code github`.
+
+### Top Header Bar
+```text
+Topic 21: Cold Chain EWS Twin | References & Benchmark Literature
+```
+
+### Card 1 (Left Box): Recent Benchmark Literature (2023–2026)
+- **Card 1 Title:**
+```text
+Recent Cold-Chain & Digital Twin Benchmarks
+```
+- **Card 1 Content (Copy directly):**
+```text
+1. Vukšić, M., Ćelić, J., Ogrizović, D., & Perić Hadžić, A. (2026). Early Anomaly Detection in Maritime Refrigerated Containers Using a Hybrid Digital Twin and Deep Learning Framework. Applied Sciences, 16(4), 1887.
+2. Xie, Z., Long, H., Ling, C., Zhou, Y., & Luo, Y. (2025). An Anomaly Detection Scheme for Data Stream in Cold Chain Logistics. PLOS ONE, 20(3), e0315322.
+3. Meng, X., Xie, R., Liao, J., Shen, X., & Yang, S. (2024). A Cost-Effective Over-Temperature Alarm System for Cold Chain Delivery. Journal of Food Engineering, 368, 111914.
+4. Wu, W., Shen, L., Zhao, Z., Harish, A. R., Zhong, R. Y., & Huang, G. Q. (2023). Internet of Everything and Digital Twin Enabled Service Platform for Cold Chain Logistics. Journal of Industrial Information Integration, 33, 100443.
+5. Defraeye, T., Shrivastava, C., Berry, T., Verboven, P., Onwude, D., Schudel, S., et al. (2023). Digital Twins of Food Cold Chains: Advances, Challenges, and Opportunities. Computers and Electronics in Agriculture, 214, 108252.
+```
+
+### Card 2 (Right Box): Foundational Algorithms & Project Assets
+- **Card 2 Title:**
+```text
+Foundational ML Algorithms & Project Links
+```
+- **Card 2 Content (Copy directly):**
+```text
+6. Liu, F. T., Ting, K. M., & Zhou, Z.-H. (2008). Isolation Forest. 2008 Eighth IEEE International Conference on Data Mining (ICDM), 413–422.
+7. Malhotra, P., Ramakrishnan, A., Anand, G., Vig, L., Agarwal, P., & Shroff, G. (2016). LSTM-based Encoder-Decoder for Multi-sensor Anomaly Detection. ICML 2016 Anomaly Detection Workshop.
+8. Anand Jha, A. (2018). Temperature Readings: IoT Devices Telemetry Dataset. Kaggle Datasets (Structural Proxy Dataset).
+
+• Live Web Application: https://coldchain-ews-twin.streamlit.app/
+• Open-Source Code Repository: https://github.com/Krishna200608/coldchain-ews-twin
+• Institutional Affiliation: Department of Information Technology, IIIT Allahabad
+```
+
+### Spoken Presenter Cue (What to say)
+> "Finally, our research is thoroughly grounded in contemporary peer-reviewed literature across food engineering, industrial digital twins, and machine learning. Here are the core benchmark references supporting our methodology and empirical findings. Thank you, and I am now happy to take any questions."
+
