@@ -116,11 +116,50 @@ def render_telemetry_chart(
 
     st.altair_chart(chart.properties(height=360), width="stretch")
 
-    st.caption(
-        "Visual Legend: Orange Band = Injection Duration | Purple Band = Search Horizon (60 min) | "
-        "Red Triangles = Baseline Alarms | Green Squares = Isolation Forest Alarms | "
-        "Blue Circles = LSTM-Autoencoder Alarms | Dashed Blue Line = Current Playhead"
-    )
+    legend_html = """
+    <div style="
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    ">
+        <span style="font-weight: 700; color: #94a3b8; margin-right: 4px; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px;">
+            Legend
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; background: rgba(234, 88, 12, 0.15); border: 1px solid rgba(249, 115, 22, 0.45); border-radius: 6px; color: #fb923c; font-size: 0.78rem; font-weight: 500;">
+            <span style="display: inline-block; width: 10px; height: 10px; background: #ea580c; border-radius: 2px;"></span>
+            Injection Duration
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; background: rgba(147, 51, 234, 0.15); border: 1px solid rgba(168, 85, 247, 0.45); border-radius: 6px; color: #c084fc; font-size: 0.78rem; font-weight: 500;">
+            <span style="display: inline-block; width: 10px; height: 10px; background: #9333ea; border-radius: 2px;"></span>
+            Search Horizon (60m)
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 6px; color: #f87171; font-size: 0.78rem; font-weight: 500;">
+            <span style="color: #ef4444; font-size: 0.72rem; line-height: 1;">▲</span>
+            Baseline Alarm
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; background: rgba(22, 163, 74, 0.15); border: 1px solid rgba(34, 197, 94, 0.45); border-radius: 6px; color: #4ade80; font-size: 0.78rem; font-weight: 500;">
+            <span style="color: #22c55e; font-size: 0.75rem; line-height: 1;">■</span>
+            Isolation Forest
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; background: rgba(37, 99, 235, 0.15); border: 1px solid rgba(59, 130, 246, 0.45); border-radius: 6px; color: #60a5fa; font-size: 0.78rem; font-weight: 500;">
+            <span style="color: #3b82f6; font-size: 0.75rem; line-height: 1;">●</span>
+            LSTM-Autoencoder
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 6px; color: #38bdf8; font-size: 0.78rem; font-weight: 500;">
+            <span style="display: inline-block; border-left: 2px dashed #38bdf8; height: 11px;"></span>
+            Current Playhead
+        </span>
+    </div>
+    """
+    st.markdown(legend_html, unsafe_allow_html=True)
 
     return playhead_rule
 
