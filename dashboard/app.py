@@ -26,8 +26,17 @@ DESIGN DECISIONS HONORED:
 
 from __future__ import annotations
 
+import os
+import warnings
+
+# Suppress verbose backend/oneDNN and deprecation warnings before TensorFlow is loaded
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+warnings.filterwarnings("ignore")
+
 import pathlib
 import sys
+import time
 
 # Ensure repository root and src directory are on sys.path for Streamlit Cloud
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -189,19 +198,46 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("Playback Controls", icon=ICON_SPEED)
 
 session_key = f"playhead_{selected_inj_id}"
+is_playing_key = f"is_playing_{selected_inj_id}"
 if session_key not in st.session_state:
     st.session_state[session_key] = total_frames - 1
+if is_playing_key not in st.session_state:
+    st.session_state[is_playing_key] = False
 
-c_reset, c_end = st.sidebar.columns(2)
-if c_reset.button("Start", icon=ICON_FIRST_PAGE, use_container_width=True, help="Reset to Start of Window"):
+c_reset, c_play, c_end = st.sidebar.columns([1, 1.2, 1])
+if c_reset.button("Start", icon=ICON_FIRST_PAGE, width="stretch", help="Reset to Start of Window"):
     st.session_state[session_key] = 0
-if c_end.button("End", icon=ICON_LAST_PAGE, use_container_width=True, help="Jump to End of Window"):
+    st.session_state[is_playing_key] = False
+    st.rerun()
+
+is_playing = st.session_state[is_playing_key]
+play_label = "Pause" if is_playing else "Play"
+play_icon = ":material/pause:" if is_playing else ":material/play_arrow:"
+
+if c_play.button(
+    play_label,
+    icon=play_icon,
+    width="stretch",
+    type="primary" if is_playing else "secondary",
+    help="Automatically play or pause continuous streaming replay",
+):
+    if is_playing:
+        st.session_state[is_playing_key] = False
+    else:
+        if st.session_state[session_key] >= total_frames - 1:
+            st.session_state[session_key] = 0
+        st.session_state[is_playing_key] = True
+    st.rerun()
+
+if c_end.button("End", icon=ICON_LAST_PAGE, width="stretch", help="Jump to End of Window"):
     st.session_state[session_key] = total_frames - 1
+    st.session_state[is_playing_key] = False
+    st.rerun()
 
 replay_speed = st.sidebar.select_slider(
     "Replay Speed Factor",
     options=REPLAY_SPEED_OPTIONS,
-    value="Instant",
+    value="5x",
     help="Playback speed is display-only and never alters telemetry values fed to models (D28).",
 )
 
@@ -323,3 +359,22 @@ render_crosscheck_audit(
     selected_inj_id=selected_inj_id,
     crosscheck_df=crosscheck_df,
 )
+
+# ══ Auto-Play Animation Loop (D28) ═════════════════════════════════════════════
+
+if st.session_state.get(is_playing_key, False):
+    if st.session_state[session_key] < total_frames - 1:
+        delays = {
+            "1x": 0.40,
+            "5x": 0.12,
+            "10x": 0.06,
+            "25x": 0.02,
+            "Instant": 0.005,
+        }
+        delay = delays.get(replay_speed, 0.12)
+        st.session_state[session_key] += 1
+        time.sleep(delay)
+        st.rerun()
+    else:
+        st.session_state[is_playing_key] = False
+        st.rerun()

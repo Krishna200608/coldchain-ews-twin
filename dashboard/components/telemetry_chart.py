@@ -114,7 +114,7 @@ def render_telemetry_chart(
     for al in alarm_layers:
         chart = chart + al
 
-    st.altair_chart(chart.properties(height=360), use_container_width=True)
+    st.altair_chart(chart.properties(height=360), width="stretch")
 
     st.caption(
         "Visual Legend: Orange Band = Injection Duration | Purple Band = Search Horizon (60 min) | "
@@ -143,7 +143,7 @@ def render_score_diagnostics(
                 )
             )
             if_rule = alt.Chart(pd.DataFrame([{"zero": 0.0}])).mark_rule(color="#991b1b", strokeDash=[4, 4]).encode(y="zero:Q")
-            st.altair_chart((if_chart + if_rule + playhead_rule).properties(height=200), use_container_width=True)
+            st.altair_chart((if_chart + if_rule + playhead_rule).properties(height=200), width="stretch")
             st.caption("Isolation Forest Decision Function Score (Threshold: 0.0)")
 
         with c_diag2:
@@ -156,5 +156,5 @@ def render_score_diagnostics(
                 )
             )
             lstm_rule = alt.Chart(pd.DataFrame([{"thresh": lstm_thresh_val}])).mark_rule(color="#991b1b", strokeDash=[4, 4]).encode(y="thresh:Q")
-            st.altair_chart((lstm_chart + lstm_rule + playhead_rule).properties(height=200), use_container_width=True)
+            st.altair_chart((lstm_chart + lstm_rule + playhead_rule).properties(height=200), width="stretch")
             st.caption(f"LSTM Reconstruction Error MSE (D13 Threshold: {lstm_thresh_val:.4f})")

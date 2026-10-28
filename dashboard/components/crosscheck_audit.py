@@ -66,7 +66,7 @@ def render_crosscheck_audit(
         # Full container width table with concise notes and unconstrained column to fill width
         st.dataframe(
             m5b_display[["detector", "live_alarm_timestamp", "batch_alarm_timestamp", "match", "notes_summary"]],
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             column_config={
                 "detector": st.column_config.TextColumn("Detector", width="small"),

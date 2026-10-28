@@ -49,18 +49,26 @@ OUTPUTS
 
 from __future__ import annotations
 
+import os
 import json
 import logging
 import pathlib
 import sys
+import warnings
 from collections import deque
 from typing import Generator, Any
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+warnings.filterwarnings("ignore")
 
 import joblib
 import numpy as np
 import pandas as pd
 import simpy
 import tensorflow as tf
+
+tf.get_logger().setLevel("ERROR")
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from config import (

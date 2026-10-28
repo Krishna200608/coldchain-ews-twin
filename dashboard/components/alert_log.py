@@ -92,7 +92,7 @@ def render_alert_log(
         df_alerts = df_alerts.sort_values("Timestamp", ascending=False).reset_index(drop=True)
         st.dataframe(
             df_alerts,
-            use_container_width=True,
+            width="stretch",
             height=220,
             column_config={
                 "Timestamp": st.column_config.DatetimeColumn(
