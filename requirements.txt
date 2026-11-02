@@ -9,6 +9,7 @@ scipy>=1.12.0
 scikit-learn>=1.3.0
 joblib>=1.3.0
 tensorflow>=2.15.0
+torch>=2.0.0
 
 # ── Discrete-Event Simulation (Digital Twin) ───────────────────────────────────
 simpy>=4.1.0

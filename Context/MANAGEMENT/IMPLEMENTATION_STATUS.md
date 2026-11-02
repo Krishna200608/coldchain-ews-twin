@@ -17,6 +17,7 @@ This document tracks the implementation status of all core milestones, architect
 | **M5b**| Streaming Monitors & Parity Cross-Check Audit | Stateful streaming monitors (`BaselineMonitor`, `IFMonitor`, `LSTMMonitor`), cross-check audit report | **Completed (100%)** | 2026-09-20 |
 | **M6** | Interactive Presentation Dashboard | Modular Streamlit webapp, Guided Tour Viva showcase, Altair charts, D33 buffer pre-warming | **Completed (100%)** | 2026-10-28 |
 | **M7** | Master `/Context` SSOT Documentation | Centralized Single Source of Truth directory covering all architecture, data, models, and research | **Completed (100%)** | 2026-11-02 |
+| **M8** | GPU Research Breakthroughs (RTX 5000 Ada) | Proposals P1–P5 (Kalman Adaptive, PILSTM Newton Loss, VLSTM Uncertainty, Evidential Fusion, TFT Forecaster), D36–D40 | **Completed (100%)** | 2026-11-03 |
 
 ---
 

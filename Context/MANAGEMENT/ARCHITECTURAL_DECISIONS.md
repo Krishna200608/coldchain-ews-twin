@@ -187,3 +187,32 @@ This document is the authoritative register of all architectural, methodological
 - **Decision:** Establish exact point-wise confusion matrix numbers (TP, FP, TN, FN) recorded in `if_pointwise_metrics.json` and `lstm_pointwise_metrics.json` as authoritative ground truth.
 - **Files:** [`src/if_evaluation.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/if_evaluation.py), [`src/lstm_evaluation.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/lstm_evaluation.py).
 
+---
+
+## 6. Milestone 7 Advanced Research Decisions (GPU RTX 5000 Ada)
+
+### D36: Online Adaptive Thresholding via Kalman Filter + CUSUM Drift Detection (Proposal P4)
+- **Context:** Fixed 2σ thresholds suffer high false-positive rates (45.68%) under non-stationary ambient baselines.
+- **Decision:** Implement online 1D Kalman Filter and Page's two-sided CUSUM drift detection (`KalmanCUSUMAdapter`). Freeze Kalman updates when $s_t \ge \tau_t$ (contamination guard).
+- **Files:** [`src/adaptation/adaptive_threshold.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/adaptation/adaptive_threshold.py), [`src/twin_monitors.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/twin_monitors.py).
+
+### D37: Physics-Informed LSTM-AE (PILSTM-AE) with Newton Cooling Regularization (Proposal P2)
+- **Context:** Standard MSE loss cannot distinguish electrical sensor spikes from real thermal excursions.
+- **Decision:** Train PyTorch LSTM-AE regularized with Newton's cooling loss $\mathcal{L}_{\text{phys}} = \lambda \|\frac{dT}{dt} - (-k(T - T_{\text{amb}}))\|^2$. Classify spikes exceeding $3\sigma_\delta$ as `SENSOR_ARTIFACT`.
+- **Files:** [`src/models/pilstm_ae.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/models/pilstm_ae.py), [`src/twin_monitors.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/twin_monitors.py).
+
+### D38: Variational LSTM-AE (VLSTM-AE) with Uncertainty Decomposition (Proposal P1)
+- **Context:** Deterministic autoencoders cannot quantify uncertainty or express ignorance on out-of-distribution inputs.
+- **Decision:** Train Variational LSTM-AE with ELBO loss and linear KL annealing. At inference, execute $N=15$ Monte Carlo passes to decompose into aleatoric (noise floor) and epistemic (model ignorance) uncertainties.
+- **Files:** [`src/models/vlstm_ae.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/models/vlstm_ae.py), [`src/twin_monitors.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/twin_monitors.py).
+
+### D39: Dempster-Shafer Evidential Deep Learning (EDL) Multi-Detector Fusion (Proposal P5)
+- **Context:** Individual anomaly detectors display complementary strengths and blind spots.
+- **Decision:** Build a 7-input neural evidential regression layer predicting non-negative Dirichlet belief parameters $(\alpha_{\text{normal}}, \alpha_{\text{alarm}})$. Quantify inter-detector discordance via Dempster-Shafer conflict mass $K$. Alarms fire strictly when $\hat{p} \ge 0.5$ and vacuity $u \le 0.85$.
+- **Files:** [`src/fusion/evidential_fusion.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/fusion/evidential_fusion.py), [`src/twin_monitors.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/twin_monitors.py).
+
+### D40: Multi-Horizon Quantile Temporal Forecaster / TFT (Proposal P3)
+- **Context:** All reconstruction-based detection is fundamentally reactive and incurs sequence lag on creeping drifts.
+- **Decision:** Implement multi-quantile temporal GRU with self-attention forecasting 10 steps ahead at quantiles $q \in \{0.1, 0.5, 0.9\}$ trained with Pinball loss. Fire pre-emptive alarms when upper quantile trajectory breaches limits before physical crossing.
+- **Files:** [`src/models/tft_forecaster.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/models/tft_forecaster.py), [`src/twin_monitors.py`](file:///d:/Lab/Managing%20Corporate%20Entrepreneurship/coldchain-ews-twin/src/twin_monitors.py).
+

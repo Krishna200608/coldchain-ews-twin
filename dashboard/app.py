@@ -85,6 +85,7 @@ from dashboard.components.detector_cards import (
     render_detector_cards,
     render_telemetry_metrics_row,
 )
+from dashboard.components.research_showcase import render_research_showcase
 from dashboard.components.showcase import render_showcase_banner
 from dashboard.components.telemetry_chart import (
     render_score_diagnostics,
@@ -362,6 +363,15 @@ render_alert_log(
     onset_ts=onset_ts,
     horizon_end_ts=horizon_end_ts,
     lstm_thresh_val=lstm_thresh_val,
+)
+
+# ══ Milestone 7 Research Innovations & Benchmark Matrix ═══════════════════════
+
+render_research_showcase(
+    selected_inj_id=selected_inj_id,
+    series=series,
+    current_reading=current_reading,
+    use_adaptive=use_adaptive,
 )
 
 # ══ Scientific Cross-Check Verification Audit (Footer) ═════════════════════════
