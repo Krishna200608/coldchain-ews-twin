@@ -269,3 +269,4 @@ Also update relevant `Context/` files after each proposal and add entries to `do
 ---
 
 *This primer was generated on 2026-11-02. The project SSOT is `Context/README.md`. The full improvement plan is `docs/RESEARCH_HANDOFF.md`. Everything is in the GitHub repo at `https://github.com/Krishna200608/coldchain-ews-twin`.*
+

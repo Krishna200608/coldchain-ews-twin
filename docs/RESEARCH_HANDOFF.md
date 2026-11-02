@@ -1073,3 +1073,4 @@ ssh username@<college-gpu-ip>
 ---
 
 *This document was generated on 2026-11-02 from verified repository inspection. All metrics are sourced directly from `data/processed/*_pointwise_metrics.json` and `data/processed/three_way_comparison.csv`. No metrics are fabricated. The document should be kept synchronized with the actual implementation — update relevant sections after each proposal is completed.*
+
