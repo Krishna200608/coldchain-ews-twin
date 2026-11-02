@@ -55,12 +55,21 @@ def render_alert_log(
                 "Threshold": f"{lstm_thresh_val:.4f}",
                 "Evaluation Window": "In Horizon" if onset_ts <= t_stamp <= horizon_end_ts else "Outside Horizon",
             })
+        if r.get("pilstm_alarm"):
+            all_active_alarms.append({
+                "Timestamp": t_stamp,
+                "Detector": f"PILSTM ({r.get('pilstm_category', 'EXCURSION')})",
+                "Telemetry (°C)": f"{temp:.2f}",
+                "Score": f"{float(r.get('pilstm_score', 0.0)):.4f}",
+                "Threshold": f"{lstm_thresh_val:.4f}",
+                "Evaluation Window": "In Horizon" if onset_ts <= t_stamp <= horizon_end_ts else "Outside Horizon",
+            })
 
     c_filt1, c_filt2 = st.columns([2, 2])
     with c_filt1:
         detector_filter = st.selectbox(
             "Filter by Detector",
-            ["All Detectors", "Naive Baseline", "Isolation Forest", "LSTM-Autoencoder"],
+            ["All Detectors", "Naive Baseline", "Isolation Forest", "LSTM-Autoencoder", "PILSTM"],
             index=0,
         )
     with c_filt2:
@@ -85,7 +94,7 @@ def render_alert_log(
         )
 
         if detector_filter != "All Detectors":
-            df_alerts = df_alerts[df_alerts["Detector"] == detector_filter]
+            df_alerts = df_alerts[df_alerts["Detector"].str.startswith(detector_filter)]
         if window_filter == "Within Search Horizon Only":
             df_alerts = df_alerts[df_alerts["Evaluation Window"] == "In Horizon"]
 

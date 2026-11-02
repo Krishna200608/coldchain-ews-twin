@@ -19,7 +19,7 @@ from dashboard.constants import (
     MODELS_DIR,
 )
 from dashboard.data_loader import load_clean_stream
-from src.twin_monitors import BaselineMonitor, IFMonitor, LSTMMonitor
+from src.twin_monitors import BaselineMonitor, IFMonitor, LSTMMonitor, PILSTMMonitor
 
 
 @st.cache_data
@@ -44,6 +44,19 @@ def simulate_prewarmed_window(
     if_mon = IFMonitor(series_name, if_model_path)
     lstm_mon = LSTMMonitor(series_name, lstm_model_path, lstm_stats_path, lstm_thresh)
 
+    pilstm_model_path = MODELS_DIR / f"pilstm_{series_name.lower()}.pt"
+    physics_params_path = DATA_DIR / f"physics_params_{series_name.lower()}.json"
+    pilstm_mon = None
+    if pilstm_model_path.exists() and physics_params_path.exists():
+        pilstm_mon = PILSTMMonitor(
+            series_name=series_name,
+            model_path=pilstm_model_path,
+            norm_stats_path=lstm_stats_path,
+            physics_params_path=physics_params_path,
+            threshold=lstm_thresh,
+            device="cpu",
+        )
+
     # D33: Pre-warm IF monitor with 10 readings prior to visible window
     prewarm_if = df_clean.iloc[max(0, win_start_idx - IF_PREWARM_STEPS) : win_start_idx]
     for _, r in prewarm_if.iterrows():
@@ -54,15 +67,20 @@ def simulate_prewarmed_window(
         })
     if_mon.alarm_records.clear()
 
-    # D33: Pre-warm LSTM monitor with 30 readings prior to visible window
+    # D33: Pre-warm LSTM monitors with 30 readings prior to visible window
     prewarm_lstm = df_clean.iloc[max(0, win_start_idx - LSTM_PREWARM_STEPS) : win_start_idx]
     for _, r in prewarm_lstm.iterrows():
-        lstm_mon.process_event({
+        ev_pre = {
             "ts": r["ts"],
             "temp_injected": float(r["temp_injected"]),
             "gap_seconds": float(r["gap_seconds"]),
-        })
+        }
+        lstm_mon.process_event(ev_pre)
+        if pilstm_mon:
+            pilstm_mon.process_event(ev_pre)
     lstm_mon.alarm_records.clear()
+    if pilstm_mon:
+        pilstm_mon.alarm_records.clear()
 
     # Process visible window events sequentially
     vis_rows = df_clean.iloc[win_start_idx : win_end_idx + 1]
@@ -76,6 +94,7 @@ def simulate_prewarmed_window(
         b_rec = base_mon.process_event(ev)
         i_rec = if_mon.process_event(ev)
         l_rec = lstm_mon.process_event(ev)
+        p_rec = pilstm_mon.process_event(ev) if pilstm_mon else None
 
         window_records.append({
             "ts": r["ts"],
@@ -97,6 +116,9 @@ def simulate_prewarmed_window(
             "lstm_adaptive_alarm": l_rec.get("adaptive_alarm", l_rec["alarm"]),
             "lstm_adaptive_threshold": l_rec.get("adaptive_threshold", lstm_thresh),
             "lstm_cusum_alarm": l_rec.get("cusum_alarm", False),
+            "pilstm_score": p_rec["score"] if p_rec else None,
+            "pilstm_alarm": p_rec["alarm"] if p_rec else False,
+            "pilstm_category": p_rec["alarm_category"] if p_rec else "NORMAL",
         })
 
     return pd.DataFrame(window_records)

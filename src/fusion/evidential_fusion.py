@@ -153,3 +153,4 @@ def dempster_shafer_combine(
     uncertainty = float(K)  # Conflict directly informs epistemic vacuity
 
     return float(fused_prob), float(uncertainty), float(K)
+
