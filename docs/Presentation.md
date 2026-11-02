@@ -308,3 +308,4 @@
 | **3. "Why was LSTM late on drift (-14 min)?"** | *"LSTMs have temporal memory inertia. Because the drift slope was gradual (+0.05°C/min), the recurrent cells adapted and reconstructed the slowly changing series, delaying error spike generation."* |
 | **4. "How do you guarantee 100% live/batch simulation parity?"** | *"Through our Buffer Pre-Warming protocol (Decision D33): rolling buffers are primed with preceding historical observations before playback starts, completely eliminating cold-start false negatives."* |
 | **5. "What is the single biggest lesson in Corporate Entrepreneurship?"** | *"To avoid 'deep learning bias'—the temptation to deploy expensive neural networks where simpler, low-compute classical models (Isolation Forest) actually deliver superior operational runway (+64 min) at a fraction of the cost."* |
+
