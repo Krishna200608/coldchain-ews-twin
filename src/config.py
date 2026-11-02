@@ -92,3 +92,33 @@ LSTM_VAL_FRACTION: float = 0.1
 # alarm timestamps and must be documented as a new AD_LOG decision before use.
 # (D19 — see docs/AD_LOG.md).
 TRANSIT_LATENCY_SECONDS: float = 0.0
+
+# ══ Research Milestone Constants (P1–P5) ════════════════════════════════════════
+
+# P4: Online Kalman + CUSUM Adaptive Threshold
+KALMAN_R: float = 0.01
+CUSUM_SLACK_FACTOR: float = 0.5
+CUSUM_DECISION_FACTOR: float = 4.0
+
+# Verified LSTM fixed threshold references (D13)
+LSTM_THRESH_OUT: float = 1.010091
+LSTM_THRESH_IN: float = 1.512753
+
+# Initial score distribution stats for P4 Kalman adapters (train split causal)
+IF_TRAIN_MU_OUT: float = -0.059340
+IF_TRAIN_STD_OUT: float = 0.064521
+IF_TRAIN_MU_IN: float = -0.081425
+IF_TRAIN_STD_IN: float = 0.060547
+
+LSTM_TRAIN_MU_OUT: float = 0.139011
+LSTM_TRAIN_STD_OUT: float = 0.436083
+LSTM_TRAIN_MU_IN: float = 0.270077
+LSTM_TRAIN_STD_IN: float = 0.627397
+
+# P2: Physics-Informed LSTM-AE
+PHYSICS_LAMBDA: float = 0.1
+
+# P1: Variational LSTM-AE
+VLSTM_LATENT_DIM: int = 16
+VLSTM_HIDDEN_SIZE: int = 32
+MC_SAMPLES: int = 20

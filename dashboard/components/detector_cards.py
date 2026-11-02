@@ -91,6 +91,7 @@ def render_detector_cards(
     l_fired: pd.DataFrame,
     lstm_lead_val: float | None,
     lstm_reason: str,
+    use_adaptive: bool = False,
 ) -> None:
     """Render the 3 side-by-side detector cards using native st.metric primitives."""
     st.markdown("---")
@@ -134,10 +135,17 @@ def render_detector_cards(
             i_first_ts = i_fired.iloc[0]["ts"] if not i_fired.empty else None
             i_lead = (end_ts - i_first_ts).total_seconds() / 60.0 if i_first_ts is not None else None
 
+            if use_adaptive and "if_adaptive_threshold" in current_reading:
+                delta_str = f"Adaptive Thr: < -{current_reading['if_adaptive_threshold']:.4f}"
+                if current_reading.get("if_cusum_alarm", False):
+                    delta_str += " (CUSUM Drift)"
+            else:
+                delta_str = "Threshold: < 0.0000"
+
             st.metric(
                 label="Decision Score",
                 value=f"{current_reading['if_score']:.4f}",
-                delta="Threshold: < 0.0000",
+                delta=delta_str,
                 delta_color="off",
             )
             if i_first_ts:
@@ -155,7 +163,7 @@ def render_detector_cards(
                     value="No Alarm",
                     delta="Normal in window",
                     delta_color="off",
-                    help="Decision score remained >= 0.0 throughout evaluation window",
+                    help="Decision score remained normal throughout evaluation window",
                 )
 
     # 3. LSTM-Autoencoder Card
@@ -165,10 +173,17 @@ def render_detector_cards(
             l_first_ts = l_fired.iloc[0]["ts"] if not l_fired.empty else None
             l_lead = (end_ts - l_first_ts).total_seconds() / 60.0 if l_first_ts is not None else None
 
+            if use_adaptive and "lstm_adaptive_threshold" in current_reading:
+                delta_str = f"Adaptive Thr: ≥ {current_reading['lstm_adaptive_threshold']:.4f}"
+                if current_reading.get("lstm_cusum_alarm", False):
+                    delta_str += " (CUSUM Drift)"
+            else:
+                delta_str = f"Threshold: ≥ {lstm_thresh_val:.4f}"
+
             st.metric(
                 label="Reconstruction MSE",
                 value=f"{current_reading['lstm_score']:.4f}",
-                delta=f"Threshold: ≥ {lstm_thresh_val:.4f}",
+                delta=delta_str,
                 delta_color="off",
             )
             if l_first_ts:

@@ -88,9 +88,15 @@ def simulate_prewarmed_window(
             "if_score": i_rec["score"],
             "if_alarm": i_rec["alarm"],
             "if_threshold": 0.0,
+            "if_adaptive_alarm": i_rec.get("adaptive_alarm", i_rec["alarm"]),
+            "if_adaptive_threshold": i_rec.get("adaptive_threshold", 0.0),
+            "if_cusum_alarm": i_rec.get("cusum_alarm", False),
             "lstm_score": l_rec["score"],
             "lstm_alarm": l_rec["alarm"],
             "lstm_threshold": lstm_thresh,
+            "lstm_adaptive_alarm": l_rec.get("adaptive_alarm", l_rec["alarm"]),
+            "lstm_adaptive_threshold": l_rec.get("adaptive_threshold", lstm_thresh),
+            "lstm_cusum_alarm": l_rec.get("cusum_alarm", False),
         })
 
     return pd.DataFrame(window_records)
@@ -101,15 +107,23 @@ def get_active_telemetry_slice(
     current_frame: int,
     onset_ts: pd.Timestamp,
     horizon_end_ts: pd.Timestamp,
+    use_adaptive: bool = False,
 ) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Extract current telemetry reading, active historical slice up to playhead,
     and detector alarms within the evaluation horizon [onset_ts, horizon_end_ts].
+    Supports switching between Fixed and Kalman-CUSUM Adaptive thresholds (Proposal P4).
     """
     active_slice = sim_df.iloc[: current_frame + 1]
     current_reading = sim_df.iloc[current_frame]
     eval_slice = active_slice[(active_slice["ts"] >= onset_ts) & (active_slice["ts"] <= horizon_end_ts)]
     b_fired = eval_slice[eval_slice["baseline_alarm"] == True]
-    i_fired = eval_slice[eval_slice["if_alarm"] == True]
-    l_fired = eval_slice[eval_slice["lstm_alarm"] == True]
+    
+    if use_adaptive and "if_adaptive_alarm" in eval_slice.columns:
+        i_fired = eval_slice[eval_slice["if_adaptive_alarm"] == True]
+        l_fired = eval_slice[eval_slice["lstm_adaptive_alarm"] == True]
+    else:
+        i_fired = eval_slice[eval_slice["if_alarm"] == True]
+        l_fired = eval_slice[eval_slice["lstm_alarm"] == True]
+
     return active_slice, current_reading, eval_slice, b_fired, i_fired, l_fired

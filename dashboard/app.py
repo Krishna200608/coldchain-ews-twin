@@ -250,6 +250,16 @@ current_frame = st.sidebar.slider(
 )
 st.session_state[session_key] = current_frame
 
+# ══ Adaptive Thresholding (Proposal P4) ═══════════════════════════════════════
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("Threshold Mode")
+use_adaptive = st.sidebar.toggle(
+    "Kalman + CUSUM Adaptive Threshold",
+    value=False,
+    help="When enabled, dynamic Kalman thresholding adapts to sensor baseline drift (Proposal P4).",
+)
+
 # ══ Scientific Context & Thresholds ════════════════════════════════════════════
 
 clean_thresh = get_clean_baseline_threshold(series)
@@ -274,6 +284,7 @@ active_slice, current_reading, eval_slice, b_fired, i_fired, l_fired = get_activ
     current_frame=current_frame,
     onset_ts=onset_ts,
     horizon_end_ts=horizon_end_ts,
+    use_adaptive=use_adaptive,
 )
 curr_ts = current_reading["ts"]
 curr_temp = current_reading["temp_injected"]
@@ -319,6 +330,7 @@ render_detector_cards(
     l_fired=l_fired,
     lstm_lead_val=lstm_lead_val,
     lstm_reason=lstm_reason,
+    use_adaptive=use_adaptive,
 )
 
 # ══ Interactive Altair Telemetry & Alarm Trajectory Chart ══════════════════════

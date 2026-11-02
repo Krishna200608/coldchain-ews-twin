@@ -4,6 +4,17 @@ All notable technical evolutions, milestone completions, and architectural upgra
 
 ---
 
+## [2.1.0] — 2026-11-02 (Research Proposal P4: Online Adaptive Thresholding via Kalman + CUSUM)
+### Added
+- Created `src/adaptation/adaptive_threshold.py` implementing `KalmanCUSUMAdapter` for online dynamic threshold adaptation under non-stationary sensor drift.
+- Integrated adaptive threshold tracking into `src/twin_monitors.py` (`IFMonitor`, `LSTMMonitor`) and `dashboard/` components.
+- Added comprehensive unit test suite in `tests/test_adaptive_threshold.py` (5/5 tests passing).
+- Evaluated full 77,259-reading test-split stream in `scripts/evaluate_adaptive_threshold.py`, demonstrating a 35.5% relative reduction in Isolation Forest FPR (45.68% down to 29.45%) on the Out series.
+- Preserved 100% bit-for-bit backward parity (D33) with existing benchmark models.
+- Documented Architectural Decision **D36** in `docs/AD_LOG.md`.
+
+---
+
 ## [2.0.0] — 2026-11-02 (Milestone 7: Centralized SSOT Architecture)
 ### Added
 - Created centralized `/Context` Single Source of Truth (SSOT) documentation repository comprising 44 structured markdown modules.

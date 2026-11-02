@@ -69,15 +69,36 @@ import simpy
 import tensorflow as tf
 
 tf.get_logger().setLevel("ERROR")
+try:
+    # Existing lightweight LSTM inference runs on CPU (GPU reserved for PyTorch research models)
+    tf.config.set_visible_devices([], "GPU")
+except Exception:
+    pass
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from config import (
+    CUSUM_DECISION_FACTOR,
+    CUSUM_SLACK_FACTOR,
+    IF_TRAIN_MU_IN,
+    IF_TRAIN_MU_OUT,
+    IF_TRAIN_STD_IN,
+    IF_TRAIN_STD_OUT,
     K_SIGMA,
+    KALMAN_R,
+    LSTM_TRAIN_MU_IN,
+    LSTM_TRAIN_MU_OUT,
+    LSTM_TRAIN_STD_IN,
+    LSTM_TRAIN_STD_OUT,
     LSTM_WINDOW_LENGTH,
     ROLLING_WINDOW,
     TRANSIT_LATENCY_SECONDS,
 )
 from digital_twin import source_process, transit_process
+
+try:
+    from adaptation.adaptive_threshold import KalmanCUSUMAdapter
+except ImportError:
+    from src.adaptation.adaptive_threshold import KalmanCUSUMAdapter
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -175,6 +196,19 @@ class IFMonitor:
         self.alarm_records: list[dict[str, Any]] = []
         self.live_feature_history: list[dict[str, Any]] = []
 
+        # Proposal P4: Online adaptive threshold via Kalman + CUSUM
+        is_out = series_name.lower() == "out"
+        init_mu = IF_TRAIN_MU_OUT if is_out else IF_TRAIN_MU_IN
+        init_std = IF_TRAIN_STD_OUT if is_out else IF_TRAIN_STD_IN
+        self.adapter = KalmanCUSUMAdapter(
+            init_mean=init_mu,
+            init_std=init_std,
+            k_sigma=K_SIGMA,
+            measurement_noise_R=KALMAN_R,
+            cusum_slack_factor=CUSUM_SLACK_FACTOR,
+            cusum_decision_factor=CUSUM_DECISION_FACTOR,
+        )
+
     def process_event(self, event: dict[str, Any]) -> dict[str, Any]:
         """Incremental feature calculation and IF inference."""
         temp = float(event["temp_injected"])
@@ -201,11 +235,15 @@ class IFMonitor:
             # First row edge case: rolling_std requires min_periods=2
             is_alarm = False
             score = 0.0
+            neg_score = 0.0
+            adapt_res = self.adapter.update(neg_score)
         else:
             feat = np.array([[temp, gap, rolling_mean, rolling_std]], dtype=np.float32)
             # decision_function: higher is normal, < 0 is anomaly
             score = float(self.model.decision_function(feat)[0])
             is_alarm = bool(score < 0.0)
+            neg_score = -score
+            adapt_res = self.adapter.update(neg_score)
 
         record = {
             "ts": event["ts"],
@@ -214,6 +252,13 @@ class IFMonitor:
             "alarm": is_alarm,
             "score": score,
             "threshold": 0.0,
+            # Proposal P4: Online adaptive threshold outputs
+            "adaptive_alarm": bool(neg_score > adapt_res.adaptive_threshold),
+            "adaptive_threshold": float(adapt_res.adaptive_threshold),
+            "cusum_alarm": bool(adapt_res.cusum_alarm),
+            "kalman_mean": float(adapt_res.kalman_mean),
+            "kalman_std": float(adapt_res.kalman_std),
+            "is_stable": bool(adapt_res.is_stable),
         }
         self.alarm_records.append(record)
         return record
@@ -255,6 +300,19 @@ class LSTMMonitor:
         self.raw_buffer: deque[tuple[float, float]] = deque(maxlen=self.window_size)
         self.alarm_records: list[dict[str, Any]] = []
 
+        # Proposal P4: Online adaptive threshold via Kalman + CUSUM
+        is_out = series_name.lower() == "out"
+        init_mu = LSTM_TRAIN_MU_OUT if is_out else LSTM_TRAIN_MU_IN
+        init_std = LSTM_TRAIN_STD_OUT if is_out else LSTM_TRAIN_STD_IN
+        self.adapter = KalmanCUSUMAdapter(
+            init_mean=init_mu,
+            init_std=init_std,
+            k_sigma=K_SIGMA,
+            measurement_noise_R=KALMAN_R,
+            cusum_slack_factor=CUSUM_SLACK_FACTOR,
+            cusum_decision_factor=CUSUM_DECISION_FACTOR,
+        )
+
         # Warm up tf.function step for low inference latency
         @tf.function
         def _predict_step(x: tf.Tensor) -> tf.Tensor:
@@ -274,6 +332,7 @@ class LSTMMonitor:
             # Blind spot at beginning of entire replay until 30 readings accumulate (D23)
             is_alarm = False
             score = np.nan
+            adapt_res = self.adapter.update(float("nan"))
         else:
             arr = np.array(self.raw_buffer, dtype=np.float32)
             t_z = (arr[:, 0] - self.t_mean) / self.t_std
@@ -284,6 +343,7 @@ class LSTMMonitor:
             diff_last = pred[0, -1, :] - window[0, -1, :]
             score = float(np.mean(diff_last ** 2))
             is_alarm = bool(score >= self.threshold)
+            adapt_res = self.adapter.update(score)
 
         record = {
             "ts": event["ts"],
@@ -292,6 +352,13 @@ class LSTMMonitor:
             "alarm": is_alarm,
             "score": score,
             "threshold": self.threshold,
+            # Proposal P4: Online adaptive threshold outputs
+            "adaptive_alarm": bool(score >= adapt_res.adaptive_threshold) if not np.isnan(score) else False,
+            "adaptive_threshold": float(adapt_res.adaptive_threshold),
+            "cusum_alarm": bool(adapt_res.cusum_alarm),
+            "kalman_mean": float(adapt_res.kalman_mean),
+            "kalman_std": float(adapt_res.kalman_std),
+            "is_stable": bool(adapt_res.is_stable),
         }
         self.alarm_records.append(record)
         return record

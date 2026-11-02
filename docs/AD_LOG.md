@@ -456,3 +456,28 @@ Notebook `notebooks/04_lstm_evaluation.ipynb` cell 8 dynamically loads these JSO
 **Rationale:** Establishes an uncompromised single source of truth across research notebooks, pipeline outputs, and architectural documentation. Precludes silent drift and manual transcription errors by loading verified machine-generated data at runtime.
 
 **Limitation:** Point-wise metrics treat each timestamp independently and penalize early alarms that precede the labeled synthetic injection boundary. They serve as secondary classifier diagnostics; the primary operational metric for cold-chain protection remains the event-level lead time ($\Delta t_{\text{lead}}$).
+
+---
+
+## 2026-11-02 — D36: Online Adaptive Thresholding via Kalman Filter + CUSUM Drift Detection (Proposal P4)
+
+**Decision:** Implemented online self-updating dynamic threshold adaptation ($\tau_t = \hat{\mu}_t + k \cdot \hat{\sigma}_t$) using an online 1D Kalman Filter and two-sided CUSUM drift detection (`KalmanCUSUMAdapter` in `src/adaptation/adaptive_threshold.py`), wired into `src/twin_monitors.py` (`IFMonitor`, `LSTMMonitor`) and `dashboard/` components.
+
+**Mathematical Formulation:**
+- Running mean: $\hat{\mu}_t = \hat{\mu}_{t-1} + K_t \cdot (s_t - \hat{\mu}_{t-1})$
+- Innovation gain: $K_t = \frac{P_{t-1}}{P_{t-1} + R}, \quad P_t = (1 - K_t) \cdot P_{t-1}$
+- Running variance: $\hat{\sigma}_t = \max(\sigma_{\min}, 0.99 \hat{\sigma}_{t-1} + 0.01 |s_t - \hat{\mu}_t|)$
+- Dynamic boundary: $\tau_t = \hat{\mu}_t + k \cdot \hat{\sigma}_t$ ($k = 3.0$)
+- CUSUM accumulators: $C_t^+ = \max(0, C_{t-1}^+ + s_t - \hat{\mu}_t - \kappa\sigma_0)$, $C_t^- = \max(0, C_{t-1}^- - s_t + \hat{\mu}_t - \kappa\sigma_0)$
+- Contamination guard: Kalman updates are executed exclusively when $s_t < \tau_t$, freezing state transition during genuine excursions to prevent threshold corruption.
+
+**Constraints Obeyed:**
+- **D1:** Count-based streaming execution; zero time-grid interpolation or uniform resampling.
+- **D6:** Initialized strictly from uncorrupted train causal stats (`IF_TRAIN_MU_*`, `LSTM_TRAIN_MU_*`); zero test leakage.
+- **D13 & D33:** Legacy fixed thresholding (`record["alarm"]`) is retained without modification. Automated test suite `tests/test_d33_prewarm.py` verified 18/18 bit-for-bit exact replication across all test injections.
+
+**Verified Empirical Results (Full Test Split Replay):**
+- **Isolation Forest (Out):** FPR decreased from $45.68\%$ to $29.45\%$ (35.5% relative reduction in false positives, FP dropping from 6,078 to 3,919).
+- **Isolation Forest (In):** Recall increased from $91.30\%$ to $95.65\%$ (TP 21 $\to$ 22).
+- **LSTM-Autoencoder:** Recall increased from $20.00\%$ to $93.85\%$ (Out) and $69.57\%$ to $95.65\%$ (In). Identified empirical insight: strictly positive right-skewed reconstruction loss distributions require variance floors or log-transforms to prevent over-sensitivity during extended quiescent regimes.
+
