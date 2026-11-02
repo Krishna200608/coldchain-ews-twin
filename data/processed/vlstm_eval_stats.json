@@ -1,0 +1,22 @@
+{
+  "Out": {
+    "series": "Out",
+    "best_val_loss": 0.22710391655564308,
+    "mu_aleatoric": 0.20187829434871674,
+    "std_aleatoric": 0.5384852886199951,
+    "tau_aleatoric": 1.278848871588707,
+    "mu_epistemic": 0.009094086475670338,
+    "std_epistemic": 0.05568354204297066,
+    "weights_path": "/home/narya/kent-ai/project/coldchain-ews-twin/models/vlstm_out.pt"
+  },
+  "In": {
+    "series": "In",
+    "best_val_loss": 0.5023160874843597,
+    "mu_aleatoric": 0.4045219421386719,
+    "std_aleatoric": 0.7356163263320923,
+    "tau_aleatoric": 1.8757545948028564,
+    "mu_epistemic": 0.02930581010878086,
+    "std_epistemic": 0.09632530063390732,
+    "weights_path": "/home/narya/kent-ai/project/coldchain-ews-twin/models/vlstm_in.pt"
+  }
+}

@@ -93,6 +93,8 @@ from config import (
     LSTM_WINDOW_LENGTH,
     ROLLING_WINDOW,
     TRANSIT_LATENCY_SECONDS,
+    VLSTM_HIDDEN_SIZE,
+    VLSTM_LATENT_DIM,
 )
 from digital_twin import source_process, transit_process
 
@@ -105,6 +107,11 @@ try:
     from models.pilstm_ae import PILSTMAutoencoder
 except ImportError:
     from src.models.pilstm_ae import PILSTMAutoencoder
+
+try:
+    from models.vlstm_ae import VLSTMAutoencoder
+except ImportError:
+    from src.models.vlstm_ae import VLSTMAutoencoder
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -476,6 +483,120 @@ class PILSTMMonitor:
             "score": score,
             "threshold": self.threshold,
             "dT_dt": float(dT_dt),
+            "alarm_category": alarm_category,
+        }
+        self.alarm_records.append(record)
+        return record
+
+
+# ══ Variational LSTM Monitor (Proposal P1) ═════════════════════════════════════
+
+class VLSTMMonitor:
+    """
+    Live Variational LSTM-Autoencoder Monitor (Proposal P1).
+    
+    Performs Monte Carlo stochastic forward passes to decompose sequential anomaly
+    reconstruction error into:
+    - Aleatoric Uncertainty: Data/sensor noise floor.
+    - Epistemic Uncertainty: Model ignorance/unfamiliarity (novel regime).
+    Provides confidence-calibrated alerts (HIGH vs LOW confidence).
+    """
+
+    def __init__(
+        self,
+        series_name: str,
+        model_path: pathlib.Path,
+        norm_stats_path: pathlib.Path,
+        threshold: float,
+        n_mc_samples: int = 15,
+        device: str = "cpu",
+    ):
+        self.series_name = series_name
+        self.device = torch.device(device)
+        self.threshold = threshold
+        self.n_mc_samples = n_mc_samples
+        self.window_size = LSTM_WINDOW_LENGTH
+        self.raw_buffer: deque[tuple[float, float]] = deque(maxlen=self.window_size)
+        self.alarm_records: list[dict[str, Any]] = []
+
+        # Load normalization stats
+        with open(norm_stats_path, "r", encoding="utf-8") as f:
+            self.norm_stats = json.load(f)
+        self.t_mean = float(self.norm_stats["temp_injected_mean"])
+        self.t_std = float(self.norm_stats["temp_injected_std"])
+        self.g_mean = float(self.norm_stats["log_gap_seconds_mean"])
+        self.g_std = float(self.norm_stats["log_gap_seconds_std"])
+
+        # Load PyTorch model
+        self.model = VLSTMAutoencoder(
+            input_size=2,
+            hidden_size=VLSTM_HIDDEN_SIZE,
+            latent_dim=VLSTM_LATENT_DIM,
+            window_length=self.window_size,
+        )
+        checkpoint = torch.load(model_path, map_location=self.device)
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+            self.model.load_state_dict(checkpoint["model_state_dict"])
+        else:
+            self.model.load_state_dict(checkpoint)
+        self.model.to(self.device)
+        self.model.eval()
+
+    def process_event(self, event: dict[str, Any]) -> dict[str, Any]:
+        """Process incoming telemetry event through causal MC uncertainty sampling."""
+        temp = float(event["temp_injected"])
+        gap = float(event.get("gap_seconds", 0.0))
+        self.raw_buffer.append((temp, gap))
+
+        if len(self.raw_buffer) < self.window_size:
+            is_alarm = False
+            score = np.nan
+            aleatoric = np.nan
+            epistemic = np.nan
+            uncertainty_pct = 0.0
+            alarm_category = "NORMAL"
+        else:
+            arr = np.array(self.raw_buffer, dtype=np.float32)
+            t_z = (arr[:, 0] - self.t_mean) / self.t_std
+            g_z = (np.log1p(arr[:, 1]) - self.g_mean) / self.g_std
+            window_np = (
+                np.column_stack([t_z, g_z])
+                .reshape(1, self.window_size, 2)
+                .astype(np.float32)
+            )
+
+            with torch.no_grad():
+                window_t = torch.from_numpy(window_np).to(self.device)
+                aleatoric_t, epistemic_t, _ = self.model.compute_uncertainty(
+                    window_t, n_samples=self.n_mc_samples
+                )
+                aleatoric = float(aleatoric_t.item())
+                epistemic = float(epistemic_t.item())
+
+            score = aleatoric
+            uncertainty_pct = float(epistemic / (aleatoric + epistemic + 1e-6) * 100.0)
+            is_alarm = bool(score >= self.threshold)
+
+            if is_alarm:
+                if uncertainty_pct > 70.0:
+                    alarm_category = "LOW_CONFIDENCE_ALARM"
+                elif uncertainty_pct < 30.0:
+                    alarm_category = "HIGH_CONFIDENCE_ALARM"
+                else:
+                    alarm_category = "MODERATE_CONFIDENCE_ALARM"
+            else:
+                alarm_category = "NORMAL"
+
+        record = {
+            "ts": event["ts"],
+            "timestamp": event["ts"],
+            "series": self.series_name,
+            "alarm": is_alarm,
+            "score": score,
+            "threshold": self.threshold,
+            "score_aleatoric": aleatoric,
+            "score_epistemic": epistemic,
+            "uncertainty_pct": uncertainty_pct,
             "alarm_category": alarm_category,
         }
         self.alarm_records.append(record)

@@ -1,0 +1,56 @@
+{
+  "out_step_001": {
+    "series": "Out",
+    "type": "step",
+    "lstm_lead_min": 0.0,
+    "vlstm_lead_min": null,
+    "alarm_category": "NO_ALARM",
+    "uncertainty_pct": null,
+    "first_alarm_ts": null
+  },
+  "out_drift_009": {
+    "series": "Out",
+    "type": "drift",
+    "lstm_lead_min": -14.0,
+    "vlstm_lead_min": null,
+    "alarm_category": "NO_ALARM",
+    "uncertainty_pct": null,
+    "first_alarm_ts": null
+  },
+  "out_flatline_012": {
+    "series": "Out",
+    "type": "flatline",
+    "lstm_lead_min": null,
+    "vlstm_lead_min": 4.0,
+    "alarm_category": "HIGH_CONFIDENCE_ALARM",
+    "uncertainty_pct": 9.692939266126542,
+    "first_alarm_ts": "2018-12-04 21:03:00"
+  },
+  "out_flatline_013": {
+    "series": "Out",
+    "type": "flatline",
+    "lstm_lead_min": null,
+    "vlstm_lead_min": null,
+    "alarm_category": "NO_ALARM",
+    "uncertainty_pct": null,
+    "first_alarm_ts": null
+  },
+  "in_step_018": {
+    "series": "In",
+    "type": "step",
+    "lstm_lead_min": 0.0,
+    "vlstm_lead_min": 16.0,
+    "alarm_category": "HIGH_CONFIDENCE_ALARM",
+    "uncertainty_pct": 11.089684251339328,
+    "first_alarm_ts": "2018-12-07 17:14:00"
+  },
+  "in_drift_023": {
+    "series": "In",
+    "type": "drift",
+    "lstm_lead_min": 0.0,
+    "vlstm_lead_min": 97.0,
+    "alarm_category": "HIGH_CONFIDENCE_ALARM",
+    "uncertainty_pct": 3.9050960871249165,
+    "first_alarm_ts": "2018-11-02 09:28:00"
+  }
+}

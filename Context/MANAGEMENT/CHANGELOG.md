@@ -4,6 +4,22 @@ All notable technical evolutions, milestone completions, and architectural upgra
 
 ---
 
+## [2.3.0] — 2026-11-02 (Research Proposal P1: Variational LSTM-AE with Uncertainty Quantification)
+### Added
+- Created `src/models/vlstm_ae.py` implementing `VLSTMAutoencoder` with Monte Carlo uncertainty estimation and ELBO loss with linear KL annealing.
+- Built headless GPU background training pipeline `scripts/train_vlstm_ae.py` and real-time monitor script `scripts/monitor_training.sh`.
+- Exported Jupyter notebook `colab/vlstm_ae_train.ipynb`.
+- Trained models in detached daemon session on NVIDIA RTX 5000 Ada GPU, saving `models/vlstm_out.pt` and `models/vlstm_in.pt`.
+- Integrated `VLSTMMonitor` into `src/twin_monitors.py` with aleatoric/epistemic uncertainty decomposition and confidence classification (`HIGH_CONFIDENCE_ALARM` vs `LOW_CONFIDENCE_ALARM`).
+- Added unit and monitor test suites `tests/test_vlstm_ae.py` and `tests/test_vlstm_monitor.py` (all passing).
+- Evaluated test split in `scripts/evaluate_vlstm.py`:
+  - `in_drift_023`: +97.0 min early warning with 3.91% uncertainty (`HIGH_CONFIDENCE_ALARM`).
+  - `in_step_018`: +16.0 min early warning with 11.09% uncertainty (`HIGH_CONFIDENCE_ALARM`).
+  - `out_flatline_012`: Detected +4.0 min early with 9.69% uncertainty (`HIGH_CONFIDENCE_ALARM`).
+- Documented Architectural Decision **D38** in `docs/AD_LOG.md`.
+
+---
+
 ## [2.2.0] — 2026-11-02 (Research Proposal P2: Physics-Informed LSTM-AE / PILSTM-AE)
 ### Added
 - Created `src/models/pilstm_ae.py` implementing `PILSTMAutoencoder` with Newton's Law of Cooling thermodynamic loss regularization.

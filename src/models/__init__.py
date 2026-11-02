@@ -13,6 +13,12 @@ from src.models.pilstm_ae import (
     physics_informed_loss,
     fit_physics_parameters,
 )
+from src.models.vlstm_ae import (
+    VLSTMAutoencoder,
+    VLSTMEncoder,
+    VLSTMDecoder,
+    vlstm_loss,
+)
 
 __all__ = [
     "PILSTMAutoencoder",
@@ -20,4 +26,8 @@ __all__ = [
     "PILSTMAEDecoder",
     "physics_informed_loss",
     "fit_physics_parameters",
+    "VLSTMAutoencoder",
+    "VLSTMEncoder",
+    "VLSTMDecoder",
+    "vlstm_loss",
 ]

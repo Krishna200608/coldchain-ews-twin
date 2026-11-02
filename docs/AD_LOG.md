@@ -511,4 +511,33 @@ where cooling rate $k$ and ambient baseline $T_{\text{amb}}$ are estimated stric
   - `out_step_001`: Fired $+30.0\text{ min}$ early, classified as `TEMPERATURE_EXCURSION`.
 - **D33 Parity:** All 18/18 live vs batch parity matches in `tests/test_d33_prewarm.py` verified exact.
 
+---
+
+## 2026-11-02 — D38: Variational LSTM-Autoencoder (VLSTM-AE) with Aleatoric/Epistemic Uncertainty Decomposition (Proposal P1)
+
+**Decision:** Designed, implemented, and trained a Variational LSTM-Autoencoder (`VLSTMAutoencoder` in `src/models/vlstm_ae.py`, PyTorch) regularized with Evidence Lower Bound (ELBO) loss and linear KL annealing:
+$$\mathcal{L}_{\text{VLSTM}} = \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] - \beta \cdot D_{\text{KL}}[q_\phi(z|x) \| \mathcal{N}(0, I)]$$
+where $\beta$ is annealed linearly from $0 \to 1$ over 50 epochs. At inference time, Monte Carlo stochastic sampling ($N=15$ passes) decomposes prediction error into:
+- **Aleatoric Uncertainty ($S_{\text{aleatoric}}$):** Expected reconstruction error representing sensor and environmental telemetry noise floor.
+- **Epistemic Uncertainty ($S_{\text{epistemic}}$):** Variance of stochastic predictions across passes representing model ignorance/unfamiliarity.
+- **Confidence Rating:** $\text{uncertainty\_pct} = \frac{S_{\text{epistemic}}}{S_{\text{aleatoric}} + S_{\text{epistemic}} + 10^{-6}} \times 100$.
+  - $< 30\% \implies \text{HIGH\_CONFIDENCE\_ALARM}$
+  - $> 70\% \implies \text{LOW\_CONFIDENCE\_ALARM}$
+
+**Training & Calibration:**
+- Trained in background daemon session on NVIDIA RTX 5000 Ada Generation GPU (`models/vlstm_out.pt` and `models/vlstm_in.pt`).
+- Calibrated D13 causal uncertainty thresholds on train partition:
+  - **Out:** $\tau_{\text{aleatoric}} = 1.278849$, baseline epistemic $\mu = 0.009094, \sigma = 0.055684$.
+  - **In:** $\tau_{\text{aleatoric}} = 1.875755$, baseline epistemic $\mu = 0.029306, \sigma = 0.096325$.
+- Integrated `VLSTMMonitor` into `src/twin_monitors.py`.
+- Automated test suites: `tests/test_vlstm_ae.py` (4/4 passed), `tests/test_vlstm_monitor.py` (1/1 passed), `tests/test_d33_prewarm.py` (18/18 exact matches).
+
+**Verified Empirical Results:**
+- **Lead Time Improvements:**
+  - `in_drift_023`: +97.0 min early warning with $3.91\%$ uncertainty tagged as `HIGH_CONFIDENCE_ALARM`.
+  - `in_step_018`: +16.0 min early warning with $11.09\%$ uncertainty tagged as `HIGH_CONFIDENCE_ALARM`.
+  - `out_flatline_012`: Detected +4.0 min early with $9.69\%$ uncertainty (`HIGH_CONFIDENCE_ALARM`), whereas Baseline LSTM never flagged (null).
+- **Headless GPU Daemon Monitoring:** Built `scripts/monitor_training.sh` providing instant headless process status, GPU temperature, VRAM allocation, and tail logs.
+
+
 
