@@ -571,6 +571,31 @@ $$\mathcal{L}_{\text{EDL}} = \sum_{k=1}^K y_k (\psi(S) - \psi(\alpha_k)) + \lamb
   - `out_step_001`: **+46.0 min early warning** (baseline LSTM was 0.0 min).
 - **Parity Gate:** Passed `tests/test_d33_prewarm.py` with 18/18 exact matches bit-for-bit.
 
+---
+
+## 2026-11-03 — D40: Multi-Horizon Quantile Temporal Forecaster / TFT (Proposal P3)
+
+**Decision:** Designed, implemented, and trained a Multi-Horizon Quantile Temporal Forecaster (`TemporalQuantileForecaster` in `src/models/tft_forecaster.py`, PyTorch) replacing purely reactive anomaly detection with proactive N-step-ahead trajectory forecasting under count-based windowing (D1).
+
+**Architecture & Pinball Loss:**
+- **Input:** 30 past telemetry readings across 4 features: `[temp_norm, log_gap_norm, rolling_std_norm, rolling_delta_norm]`.
+- **Temporal Sequence Modeling:** 2-layer temporal GRU with 4-head multi-head self-attention extracting temporal cross-step representations.
+- **Horizon & Quantiles:** Projects into $H=10$ future steps at quantiles $q \in \{0.1, 0.5, 0.9\}$ ($Q=3$).
+- **Loss:** Multi-quantile Pinball Loss summed across horizons and quantiles:
+$$\mathcal{L}_{\text{Pinball}} = \frac{1}{|Q| \cdot H} \sum_{q \in Q} \sum_{h=1}^H \max(q(y_{t+h} - \hat{y}_{t+h}^{(q)}), (q - 1)(y_{t+h} - \hat{y}_{t+h}^{(q)}))$$
+- **Pre-emptive Alarm Rule:** A pre-emptive alert (`PREEMPTIVE_TRAJECTORY_ALARM`) fires when the upper quantile trajectory ($q=0.9$) is forecasted to breach the static or adaptive temperature safety threshold within the 10-step horizon, before the excursion manifests at the sensor.
+
+**Training & Benchmark Results (D26 Test Split):**
+- Trained on NVIDIA RTX 5000 Ada Generation GPU (`models/tft_forecaster_out.pt` and `models/tft_forecaster_in.pt`).
+- **Pre-emptive Early Warning Achievements:**
+  - `in_drift_023`: **+189.0 min early warning** (Baseline was 0.0 min, LSTM was 0.0 min, IF was +11.0 min).
+  - `out_drift_009`: **+56.0 min early warning** (Baseline was 0.0 min, LSTM was -14.0 min late).
+  - `out_step_001`: **+46.0 min early warning** (Baseline was 0.0 min).
+  - `in_step_018`: **+16.0 min early warning** (Baseline was 0.0 min).
+- Integrated `TFTForecastMonitor` into `src/twin_monitors.py`.
+- Automated test suites: `tests/test_tft_forecaster.py` (3/3 passed), `tests/test_d33_prewarm.py` (18/18 exact matches).
+
+
 
 
 

@@ -118,6 +118,11 @@ try:
 except ImportError:
     from src.fusion.evidential_fusion import EvidentialFusionMLP, dempster_shafer_combine
 
+try:
+    from models.tft_forecaster import TemporalQuantileForecaster
+except ImportError:
+    from src.models.tft_forecaster import TemporalQuantileForecaster
+
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -793,6 +798,140 @@ class EvidentialFusionMonitor:
             "conflict_mass_K": conflict_K,
             "evidence_normal": evidence_normal,
             "evidence_alarm": evidence_alarm,
+            "alarm_category": alarm_category,
+        }
+        self.alarm_records.append(record)
+        return record
+
+
+# ══ Multi-Horizon Quantile Temporal Forecaster Monitor (Proposal P3) ═══════════
+
+class TFTForecastMonitor:
+    """
+    Live Multi-Horizon Temporal Quantile Forecast Monitor (Proposal P3).
+    
+    Predicts future 10-step lookahead temperature trajectories across 3 quantiles:
+    [q_0.1 (lower bound), q_0.5 (median trajectory), q_0.9 (upper envelope)].
+    
+    Enables pre-emptive early warning:
+    If the forecasted temperature envelope breaches the static or dynamic safety
+    threshold within the 10 lookahead steps, fires a pre-emptive alert before
+    the excursion actually manifests at the sensor.
+    """
+
+    def __init__(
+        self,
+        series_name: str,
+        model_path: pathlib.Path,
+        stats_path: pathlib.Path,
+        threshold: float,
+        horizon: int = 10,
+        device: str = "cpu",
+    ):
+        self.series_name = series_name
+        self.device = torch.device(device)
+        self.threshold = float(threshold)
+        self.horizon = int(horizon)
+        self.window_size = LSTM_WINDOW_LENGTH  # 30 count-based readings (D1)
+        self.raw_buffer: deque[tuple[float, float]] = deque(maxlen=self.window_size)
+        self.alarm_records: list[dict[str, Any]] = []
+
+        # Load normalization dict from stats_path
+        with open(stats_path, "r", encoding="utf-8") as f:
+            stats_dict = json.load(f)
+        s_key = "Out" if series_name.lower() == "out" else "In"
+        norm_dict = stats_dict[s_key]["norm_dict"]
+
+        self.t_mean = float(norm_dict["t_mean"])
+        self.t_std = float(norm_dict["t_std"])
+        self.g_mean = float(norm_dict["g_mean"])
+        self.g_std = float(norm_dict["g_std"])
+        self.std_mean = float(norm_dict["std_mean"])
+        self.std_std = float(norm_dict["std_std"])
+        self.d_mean = float(norm_dict["d_mean"])
+        self.d_std = float(norm_dict["d_std"])
+
+        # Load PyTorch forecaster
+        self.model = TemporalQuantileForecaster(
+            input_dim=4,
+            hidden_dim=64,
+            horizon=self.horizon,
+            quantiles=[0.1, 0.5, 0.9],
+        )
+        checkpoint = torch.load(model_path, map_location=self.device)
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+            self.model.load_state_dict(checkpoint["model_state_dict"])
+        else:
+            self.model.load_state_dict(checkpoint)
+        self.model.to(self.device)
+        self.model.eval()
+
+    def process_event(self, event: dict[str, Any]) -> dict[str, Any]:
+        """
+        Process incoming telemetry event and generate 10-step quantile forecast.
+        """
+        temp = float(event["temp_injected"])
+        gap = float(event.get("gap_seconds", 0.0))
+        self.raw_buffer.append((temp, gap))
+
+        if len(self.raw_buffer) < self.window_size:
+            is_alarm = False
+            max_forecast_temp = temp
+            min_forecast_temp = temp
+            median_forecast = temp
+            steps_to_breach = None
+            alarm_category = "NORMAL"
+        else:
+            arr = np.array(self.raw_buffer, dtype=np.float32)
+            temps = arr[:, 0]
+            gaps = arr[:, 1]
+
+            t_norm = (temps - self.t_mean) / self.t_std
+            g_norm = (np.log1p(gaps) - self.g_mean) / self.g_std
+
+            # Rolling 10 features within the 30-step window
+            rolling_std_raw = pd.Series(temps).rolling(10, min_periods=2).std().bfill().values
+            r_std_norm = (rolling_std_raw - self.std_mean) / self.std_std
+
+            rolling_mean_raw = pd.Series(temps).rolling(10, min_periods=1).mean().values
+            delta_raw = temps - rolling_mean_raw
+            r_delta_norm = (delta_raw - self.d_mean) / self.d_std
+
+            feat_seq = np.column_stack([t_norm, g_norm, r_std_norm, r_delta_norm]).astype(np.float32)
+            feat_t = torch.from_numpy(feat_seq).unsqueeze(0).to(self.device)
+
+            with torch.no_grad():
+                preds = self.model(feat_t)[0]  # (10, 3)
+                preds_np = preds.cpu().numpy()
+
+            # Denormalize predictions back to °C
+            pred_celsius = preds_np * self.t_std + self.t_mean  # (10, 3)
+            max_forecast_temp = float(np.max(pred_celsius[:, 2]))
+            min_forecast_temp = float(np.min(pred_celsius[:, 0]))
+            median_forecast = float(pred_celsius[-1, 1])
+
+            # Pre-emptive breach condition: if upper envelope exceeds threshold
+            breaches = np.where(pred_celsius[:, 2] >= self.threshold)[0]
+            if len(breaches) > 0:
+                is_alarm = True
+                steps_to_breach = int(breaches[0] + 1)
+                alarm_category = "PREEMPTIVE_TRAJECTORY_ALARM"
+            else:
+                is_alarm = False
+                steps_to_breach = None
+                alarm_category = "NORMAL"
+
+        record = {
+            "ts": event["ts"],
+            "timestamp": event["ts"],
+            "series": self.series_name,
+            "alarm": is_alarm,
+            "score": max_forecast_temp,
+            "threshold": self.threshold,
+            "max_forecast_temp": max_forecast_temp,
+            "min_forecast_temp": min_forecast_temp,
+            "median_forecast": median_forecast,
+            "steps_to_breach": steps_to_breach,
             "alarm_category": alarm_category,
         }
         self.alarm_records.append(record)

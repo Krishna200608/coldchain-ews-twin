@@ -1,0 +1,32 @@
+{
+  "Out": {
+    "series": "Out",
+    "best_val_loss": 0.04020662178366487,
+    "weights_path": "/home/narya/kent-ai/project/coldchain-ews-twin/models/tft_forecaster_out.pt",
+    "norm_dict": {
+      "t_mean": 35.68003853096587,
+      "t_std": 5.950910598500125,
+      "g_mean": 0.9894990680764548,
+      "g_std": 1.9985174353346589,
+      "std_mean": 0.4717193413067076,
+      "std_std": 0.38192722557525566,
+      "d_mean": 0.0005426552246340793,
+      "d_std": 0.6483618566960198
+    }
+  },
+  "In": {
+    "series": "In",
+    "best_val_loss": 0.08081110878229585,
+    "weights_path": "/home/narya/kent-ai/project/coldchain-ews-twin/models/tft_forecaster_in.pt",
+    "norm_dict": {
+      "t_mean": 30.83246358882653,
+      "t_std": 2.3403616097398467,
+      "g_mean": 1.9380256184976137,
+      "g_std": 2.597225618389097,
+      "std_mean": 0.4217631262346372,
+      "std_std": 0.539180455827107,
+      "d_mean": -0.00031458906802986667,
+      "d_std": 0.7552696022795355
+    }
+  }
+}

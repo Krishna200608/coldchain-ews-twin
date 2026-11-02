@@ -4,6 +4,22 @@ All notable technical evolutions, milestone completions, and architectural upgra
 
 ---
 
+## [2.5.0] — 2026-11-03 (Research Proposal P3: Multi-Horizon Quantile Temporal Forecaster / TFT)
+### Added
+- Created `src/models/tft_forecaster.py` implementing `TemporalQuantileForecaster` with 2-layer temporal GRU, 4-head multi-head self-attention, and Pinball multi-quantile loss (`pinball_loss`).
+- Created GPU training pipeline `scripts/train_tft_forecaster.py` training 10-step lookahead quantile forecasters on RTX 5000 Ada GPU, saving `models/tft_forecaster_out.pt` and `models/tft_forecaster_in.pt`.
+- Integrated `TFTForecastMonitor` into `src/twin_monitors.py` generating pre-emptive trajectory alarms when forecasted upper envelope ($q=0.9$) breaches safety thresholds.
+- Created unit and monitor test suite `tests/test_tft_forecaster.py` (3/3 passed).
+- Built evaluation script `scripts/evaluate_tft.py` evaluating all 6 test-side synthetic injections (D26 benchmark):
+  - `in_drift_023`: **+189.0 min early warning** (Baseline was 0.0 min, LSTM was 0.0 min).
+  - `out_drift_009`: **+56.0 min early warning** (Baseline was 0.0 min, LSTM was -14.0 min late).
+  - `out_step_001`: **+46.0 min early warning** (Baseline was 0.0 min).
+  - `in_step_018`: **+16.0 min early warning** (Baseline was 0.0 min).
+- Exported Colab notebook `colab/tft_train.ipynb`.
+- Documented Architectural Decision **D40** in `docs/AD_LOG.md`.
+
+---
+
 ## [2.4.0] — 2026-11-03 (Research Proposal P5: Dempster-Shafer Evidential Deep Learning Fusion Layer)
 ### Added
 - Created `src/fusion/evidential_fusion.py` implementing `EvidentialFusionMLP`, Dirichlet evidential loss (`evidential_loss`), and Dempster-Shafer rule of combination (`dempster_shafer_combine`).
