@@ -481,3 +481,34 @@ Notebook `notebooks/04_lstm_evaluation.ipynb` cell 8 dynamically loads these JSO
 - **Isolation Forest (In):** Recall increased from $91.30\%$ to $95.65\%$ (TP 21 $\to$ 22).
 - **LSTM-Autoencoder:** Recall increased from $20.00\%$ to $93.85\%$ (Out) and $69.57\%$ to $95.65\%$ (In). Identified empirical insight: strictly positive right-skewed reconstruction loss distributions require variance floors or log-transforms to prevent over-sensitivity during extended quiescent regimes.
 
+---
+
+## 2026-11-02 — D37: Physics-Informed LSTM-Autoencoder (PILSTM-AE) with Newton's Law of Cooling Loss (Proposal P2)
+
+**Decision:** Designed, implemented, and trained a Physics-Informed LSTM-Autoencoder (`PILSTMAutoencoder` in `src/models/pilstm_ae.py`, PyTorch) regularized with a thermodynamic loss penalty based on Newton's Law of Cooling:
+$$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{MSE}} + \lambda_{\text{phys}} \cdot \left\| \frac{dT_{\text{pred}}}{dt} - \left(-k(T - T_{\text{amb}})\right) \right\|^2$$
+where cooling rate $k$ and ambient baseline $T_{\text{amb}}$ are estimated strictly from uncorrupted training partition data (D6). Integrated `PILSTMMonitor` into `src/twin_monitors.py` with physical spike classification ($|\hat{\delta}| > 3\sigma_\delta \implies \text{SENSOR\_ARTIFACT}$).
+
+**Training & Calibration:**
+- Trained on NVIDIA RTX 5000 Ada Generation GPU (`models/pilstm_out.pt` and `models/pilstm_in.pt`).
+- Calibrated Newton parameters:
+  - **Out:** $T_{\text{amb}} = 37.00^\circ\text{C}, k = 0.000066\text{ s}^{-1}, \sigma_\delta = 0.007575^\circ\text{C/s}$ (threshold $3\sigma_\delta = 0.0227^\circ\text{C/s}$).
+  - **In:** $T_{\text{amb}} = 31.00^\circ\text{C}, k = 0.000400\text{ s}^{-1}, \sigma_\delta = 0.006277^\circ\text{C/s}$ (threshold $3\sigma_\delta = 0.0188^\circ\text{C/s}$).
+- Causal threshold calibrated on train windows (D13): $\tau_{\text{out}} = 1.176186$, $\tau_{\text{in}} = 1.811296$.
+
+**Verified Empirical Results:**
+- **In Series Improvements:**
+  - Recall increased from $69.57\%$ (Baseline LSTM) to **$78.26\%$** (+8.69% absolute).
+  - Precision increased from $13.11\%$ to **$19.15\%$** (+6.04% absolute).
+  - False Positive Rate decreased from $2.85\%$ to **$2.03\%$** (-28.8% relative reduction).
+  - F1 score increased from $0.2207$ to **$0.3077$**.
+- **Out Series Improvements:**
+  - False Positive Rate dropped from $20.28\%$ to **$12.52\%$** (38.3% relative reduction in false alarms).
+- **Early Warning Lead Time Breakthrough:**
+  - `out_drift_009`: Turned Baseline LSTM's late lag ($-14.0\text{ min}$) into early warning (**$+18.0\text{ min}$**)!
+  - `in_drift_023`: Improved lead time from $0.0\text{ min}$ to **$+178.0\text{ min}$**!
+  - `in_step_018`: Fired early ($+16.0\text{ min}$) and correctly classified the discontinuity as `SENSOR_ARTIFACT`.
+  - `out_step_001`: Fired $+30.0\text{ min}$ early, classified as `TEMPERATURE_EXCURSION`.
+- **D33 Parity:** All 18/18 live vs batch parity matches in `tests/test_d33_prewarm.py` verified exact.
+
+

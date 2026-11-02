@@ -1,0 +1,50 @@
+{
+  "out_step_001": {
+    "series": "Out",
+    "type": "step",
+    "lstm_lead_min": 0.0,
+    "pilstm_lead_min": 30.0,
+    "alarm_category": "TEMPERATURE_EXCURSION",
+    "first_alarm_ts": "2018-11-17 13:41:00"
+  },
+  "out_drift_009": {
+    "series": "Out",
+    "type": "drift",
+    "lstm_lead_min": -14.0,
+    "pilstm_lead_min": 18.0,
+    "alarm_category": "TEMPERATURE_EXCURSION",
+    "first_alarm_ts": "2018-10-30 03:17:00"
+  },
+  "out_flatline_012": {
+    "series": "Out",
+    "type": "flatline",
+    "lstm_lead_min": null,
+    "pilstm_lead_min": -8.0,
+    "alarm_category": "TEMPERATURE_EXCURSION",
+    "first_alarm_ts": "2018-12-04 21:15:00"
+  },
+  "out_flatline_013": {
+    "series": "Out",
+    "type": "flatline",
+    "lstm_lead_min": null,
+    "pilstm_lead_min": null,
+    "alarm_category": "NO_ALARM",
+    "first_alarm_ts": null
+  },
+  "in_step_018": {
+    "series": "In",
+    "type": "step",
+    "lstm_lead_min": 0.0,
+    "pilstm_lead_min": 16.0,
+    "alarm_category": "SENSOR_ARTIFACT",
+    "first_alarm_ts": "2018-12-07 17:14:00"
+  },
+  "in_drift_023": {
+    "series": "In",
+    "type": "drift",
+    "lstm_lead_min": 0.0,
+    "pilstm_lead_min": 178.0,
+    "alarm_category": "TEMPERATURE_EXCURSION",
+    "first_alarm_ts": "2018-11-02 08:07:00"
+  }
+}

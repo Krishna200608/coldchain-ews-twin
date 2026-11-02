@@ -1,0 +1,18 @@
+{
+  "Out": {
+    "series": "Out",
+    "best_val_loss": 0.14016752019524575,
+    "train_causal_mu": 0.169498011469841,
+    "train_causal_std": 0.5033437609672546,
+    "pilstm_threshold": 1.1761855334043503,
+    "weights_path": "/home/narya/kent-ai/project/coldchain-ews-twin/models/pilstm_out.pt"
+  },
+  "In": {
+    "series": "In",
+    "best_val_loss": 0.32665522396564484,
+    "train_causal_mu": 0.3031454384326935,
+    "train_causal_std": 0.7540751695632935,
+    "pilstm_threshold": 1.8112957775592804,
+    "weights_path": "/home/narya/kent-ai/project/coldchain-ews-twin/models/pilstm_in.pt"
+  }
+}

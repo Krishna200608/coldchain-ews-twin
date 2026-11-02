@@ -1,0 +1,32 @@
+{
+  "Out": {
+    "TP": 6,
+    "FP": 1666,
+    "TN": 11641,
+    "FN": 59,
+    "FPR": 0.1251972645975802,
+    "Precision": 0.0035885167464114833,
+    "Recall": 0.09230769230769231,
+    "F1": 0.0069084628670120895,
+    "threshold": 1.1761855334043503,
+    "category_breakdown": {
+      "TEMPERATURE_EXCURSION": 1648,
+      "SENSOR_ARTIFACT": 24
+    }
+  },
+  "In": {
+    "TP": 18,
+    "FP": 76,
+    "TN": 3668,
+    "FN": 5,
+    "FPR": 0.0202991452991453,
+    "Precision": 0.19148936170212766,
+    "Recall": 0.782608695652174,
+    "F1": 0.3076923076923077,
+    "threshold": 1.8112957775592804,
+    "category_breakdown": {
+      "TEMPERATURE_EXCURSION": 91,
+      "SENSOR_ARTIFACT": 3
+    }
+  }
+}

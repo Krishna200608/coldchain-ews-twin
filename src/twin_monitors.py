@@ -67,6 +67,7 @@ import numpy as np
 import pandas as pd
 import simpy
 import tensorflow as tf
+import torch
 
 tf.get_logger().setLevel("ERROR")
 try:
@@ -99,6 +100,11 @@ try:
     from adaptation.adaptive_threshold import KalmanCUSUMAdapter
 except ImportError:
     from src.adaptation.adaptive_threshold import KalmanCUSUMAdapter
+
+try:
+    from models.pilstm_ae import PILSTMAutoencoder
+except ImportError:
+    from src.models.pilstm_ae import PILSTMAutoencoder
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -359,6 +365,118 @@ class LSTMMonitor:
             "kalman_mean": float(adapt_res.kalman_mean),
             "kalman_std": float(adapt_res.kalman_std),
             "is_stable": bool(adapt_res.is_stable),
+        }
+        self.alarm_records.append(record)
+        return record
+
+
+# ══ Physics-Informed LSTM Monitor (Proposal P2) ═════════════════════════════════
+
+class PILSTMMonitor:
+    """
+    Live Physics-Informed LSTM-Autoencoder Monitor (Proposal P2).
+    
+    Evaluates sequential reconstruction error alongside Newton's Law of Cooling
+    thermodynamic derivatives. Differentiates sensor artifacts (discontinuous
+    unphysical spikes) from genuine temperature excursions.
+    """
+
+    def __init__(
+        self,
+        series_name: str,
+        model_path: pathlib.Path,
+        norm_stats_path: pathlib.Path,
+        physics_params_path: pathlib.Path,
+        threshold: float,
+        device: str = "cpu",
+    ):
+        self.series_name = series_name
+        self.device = torch.device(device)
+        self.threshold = threshold
+        self.window_size = LSTM_WINDOW_LENGTH
+        self.raw_buffer: deque[tuple[float, float]] = deque(maxlen=self.window_size)
+        self.alarm_records: list[dict[str, Any]] = []
+
+        # Load normalization statistics
+        with open(norm_stats_path, "r", encoding="utf-8") as f:
+            self.norm_stats = json.load(f)
+        self.t_mean = float(self.norm_stats["temp_injected_mean"])
+        self.t_std = float(self.norm_stats["temp_injected_std"])
+        self.g_mean = float(self.norm_stats["log_gap_seconds_mean"])
+        self.g_std = float(self.norm_stats["log_gap_seconds_std"])
+
+        # Load physics parameters
+        with open(physics_params_path, "r", encoding="utf-8") as f:
+            self.physics_params = json.load(f)
+        self.T_amb = float(self.physics_params["T_amb"])
+        self.k_cooling = float(self.physics_params["k_cooling"])
+        self.sigma_delta = float(self.physics_params["sigma_delta"])
+        self.spike_rate_threshold = float(
+            self.physics_params.get("spike_rate_threshold", 3.0 * self.sigma_delta)
+        )
+
+        # Load PyTorch model
+        self.model = PILSTMAutoencoder(
+            input_size=2, hidden_size=32, window_length=self.window_size
+        )
+        checkpoint = torch.load(model_path, map_location=self.device)
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+            self.model.load_state_dict(checkpoint["model_state_dict"])
+        else:
+            self.model.load_state_dict(checkpoint)
+        self.model.to(self.device)
+        self.model.eval()
+
+    def process_event(self, event: dict[str, Any]) -> dict[str, Any]:
+        """Process incoming telemetry event through causal window and thermodynamic check."""
+        temp = float(event["temp_injected"])
+        gap = float(event.get("gap_seconds", 0.0))
+        self.raw_buffer.append((temp, gap))
+
+        if len(self.raw_buffer) < self.window_size:
+            is_alarm = False
+            score = np.nan
+            dT_dt = 0.0
+            alarm_category = "NORMAL"
+        else:
+            arr = np.array(self.raw_buffer, dtype=np.float32)
+            t_z = (arr[:, 0] - self.t_mean) / self.t_std
+            g_z = (np.log1p(arr[:, 1]) - self.g_mean) / self.g_std
+            window_np = (
+                np.column_stack([t_z, g_z])
+                .reshape(1, self.window_size, 2)
+                .astype(np.float32)
+            )
+
+            with torch.no_grad():
+                window_t = torch.from_numpy(window_np).to(self.device)
+                pred_t = self.model(window_t)
+                diff_last = pred_t[0, -1, :] - window_t[0, -1, :]
+                score = float(torch.mean(diff_last ** 2).item())
+
+            # Instantaneous thermal derivative between last two readings (°C/s)
+            prev_temp = self.raw_buffer[-2][0]
+            dt = gap if gap > 0.0 else 1.0
+            dT_dt = (temp - prev_temp) / dt
+
+            is_alarm = bool(score >= self.threshold)
+            if is_alarm:
+                if abs(dT_dt) > self.spike_rate_threshold:
+                    alarm_category = "SENSOR_ARTIFACT"
+                else:
+                    alarm_category = "TEMPERATURE_EXCURSION"
+            else:
+                alarm_category = "NORMAL"
+
+        record = {
+            "ts": event["ts"],
+            "timestamp": event["ts"],
+            "series": self.series_name,
+            "alarm": is_alarm,
+            "score": score,
+            "threshold": self.threshold,
+            "dT_dt": float(dT_dt),
+            "alarm_category": alarm_category,
         }
         self.alarm_records.append(record)
         return record

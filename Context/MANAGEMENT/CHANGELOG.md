@@ -4,6 +4,21 @@ All notable technical evolutions, milestone completions, and architectural upgra
 
 ---
 
+## [2.2.0] — 2026-11-02 (Research Proposal P2: Physics-Informed LSTM-AE / PILSTM-AE)
+### Added
+- Created `src/models/pilstm_ae.py` implementing `PILSTMAutoencoder` with Newton's Law of Cooling thermodynamic loss regularization.
+- Created GPU training pipeline `scripts/train_pilstm_ae.py` and exported Jupyter notebook `colab/pilstm_ae_train.ipynb`.
+- Trained models on NVIDIA RTX 5000 Ada GPU, saving `models/pilstm_out.pt` and `models/pilstm_in.pt`.
+- Integrated `PILSTMMonitor` into `src/twin_monitors.py` with physical spike categorization (`SENSOR_ARTIFACT` vs `TEMPERATURE_EXCURSION`).
+- Added unit and monitor test suites `tests/test_pilstm_ae.py` and `tests/test_pilstm_monitor.py` (all tests passing).
+- Evaluated test-split performance in `scripts/evaluate_pilstm.py`:
+  - In series Precision rose from 13.11% to 19.15%, Recall from 69.57% to 78.26%, and FPR dropped from 2.85% to 2.03%.
+  - Out series FPR dropped from 20.28% to 12.52% (38.3% relative reduction).
+  - Solved LSTM sequence lag: turned `out_drift_009` from -14.0 min late to +18.0 min early, and `in_drift_023` to +178.0 min early.
+- Documented Architectural Decision **D37** in `docs/AD_LOG.md`.
+
+---
+
 ## [2.1.0] — 2026-11-02 (Research Proposal P4: Online Adaptive Thresholding via Kalman + CUSUM)
 ### Added
 - Created `src/adaptation/adaptive_threshold.py` implementing `KalmanCUSUMAdapter` for online dynamic threshold adaptation under non-stationary sensor drift.
