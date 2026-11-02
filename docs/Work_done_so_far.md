@@ -265,3 +265,4 @@ streamlit run dashboard/app.py --server.port 8501
 ```
 
 All models run smoothly on CPU during inference (low-latency forward pass $< 5\text{ ms}$ per sample), meaning your local machine can execute the Streamlit digital twin with all research monitors active without requiring a local GPU.
+
