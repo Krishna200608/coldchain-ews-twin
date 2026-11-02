@@ -204,3 +204,4 @@ def fit_physics_parameters(
         "sigma_delta": sigma_delta,
         "spike_rate_threshold": 3.0 * sigma_delta,
     }
+

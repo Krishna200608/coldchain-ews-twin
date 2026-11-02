@@ -189,3 +189,4 @@ def vlstm_loss(
     kl_loss = -0.5 * torch.mean(1.0 + logvar - mu.pow(2) - logvar.exp())
     total_loss = mse_loss + beta * kl_loss
     return total_loss, mse_loss, kl_loss
+

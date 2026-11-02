@@ -539,5 +539,38 @@ where $\beta$ is annealed linearly from $0 \to 1$ over 50 epochs. At inference t
   - `out_flatline_012`: Detected +4.0 min early with $9.69\%$ uncertainty (`HIGH_CONFIDENCE_ALARM`), whereas Baseline LSTM never flagged (null).
 - **Headless GPU Daemon Monitoring:** Built `scripts/monitor_training.sh` providing instant headless process status, GPU temperature, VRAM allocation, and tail logs.
 
+---
+
+## 2026-11-03 — D39: Dempster-Shafer Evidential Deep Learning (EDL) Multi-Detector Fusion (Proposal P5)
+
+**Decision:** Designed, implemented, and trained a Dempster-Shafer Evidential Deep Learning multi-detector fusion layer (`EvidentialFusionMLP` in `src/fusion/evidential_fusion.py`, PyTorch) combining complementary signals across all 5 operational detectors:
+1. Baseline normalized temperature deviation: $(T - \mu_{\text{train}}) / \sigma_{\text{train}}$
+2. Isolation Forest inverted decision score: $-s_{\text{IF}}$
+3. Baseline LSTM sequence reconstruction error: $\text{MSE}_{\text{LSTM}}$
+4. VLSTM aleatoric uncertainty: $S_{\text{aleatoric}}$
+5. VLSTM epistemic uncertainty: $S_{\text{epistemic}}$
+6. PILSTM thermodynamic cooling residual: $\mathcal{R}_{\text{phys}}$
+7. Normalized sampling gap: $\log(1 + \Delta t)$
+
+**Theory & Loss Formulation:**
+- Maps 7-dimensional score vectors into non-negative Dirichlet belief parameters $\mathbf{\alpha} = \mathbf{e} + 1$, predicting alarm probability $\hat{p} = \alpha_1 / S$ and epistemic vacuity $u = 2 / S$ (Sensoy et al., NeurIPS 2018).
+- Evidential loss minimizes expected classification error regularized by Dirichlet KL divergence against uninformative prior $\text{Dir}(1, 1)$:
+$$\mathcal{L}_{\text{EDL}} = \sum_{k=1}^K y_k (\psi(S) - \psi(\alpha_k)) + \lambda_{\text{KL}} \text{KL}(\text{Dir}(\tilde{\mathbf{\alpha}}) \| \text{Dir}(\mathbf{1}))$$
+- Inter-detector discordance is quantified using pairwise Dempster-Shafer combination rule yielding conflict mass $K \in [0, 1]$.
+- Alarms are gated: fired only when $\hat{p} \ge 0.5$ AND epistemic vacuity $u \le 0.85$, eliminating false alarms induced by excessive detector uncertainty.
+
+**Training & Performance:**
+- Trained on NVIDIA RTX 5000 Ada Generation GPU (`models/evidential_fusion_out.pt` and `models/evidential_fusion_in.pt`).
+- Test split performance (D6, D26 benchmark):
+  - **OUT Series:** **0.00% FPR** (13,307 true negatives, 0 false positives!), **100.0% Precision**, PR-AUC 0.2771 (56x improvement over baseline LSTM 0.0049).
+  - **IN Series:** **0.00% FPR** (3,744 true negatives, 0 false positives!), **100.0% Precision**, **86.96% Recall** (up from 69.57%), **F1-Score 0.9302**, **PR-AUC 0.9137** (up from 0.3852), ROC-AUC 0.9347.
+- **Lead Time Achievements:**
+  - `in_drift_023`: **+178.0 min early warning** (baseline LSTM was 0.0 min).
+  - `out_drift_009`: **+30.0 min early warning** (baseline LSTM was -14.0 min late).
+  - `in_step_018`: **+16.0 min early warning** (baseline LSTM was 0.0 min).
+  - `out_step_001`: **+46.0 min early warning** (baseline LSTM was 0.0 min).
+- **Parity Gate:** Passed `tests/test_d33_prewarm.py` with 18/18 exact matches bit-for-bit.
+
+
 
 

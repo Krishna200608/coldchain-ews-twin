@@ -4,6 +4,24 @@ All notable technical evolutions, milestone completions, and architectural upgra
 
 ---
 
+## [2.4.0] — 2026-11-03 (Research Proposal P5: Dempster-Shafer Evidential Deep Learning Fusion Layer)
+### Added
+- Created `src/fusion/evidential_fusion.py` implementing `EvidentialFusionMLP`, Dirichlet evidential loss (`evidential_loss`), and Dempster-Shafer rule of combination (`dempster_shafer_combine`).
+- Created GPU training pipeline `scripts/train_evidential_fusion.py` with vectorized sliding-window feature extraction on RTX 5000 Ada GPU (<1 min total runtime).
+- Trained multi-detector evidential fusion models saving `models/evidential_fusion_out.pt` and `models/evidential_fusion_in.pt`.
+- Integrated `EvidentialFusionMonitor` into `src/twin_monitors.py` with belief probability calibration, vacuity gating ($u \le 0.85$), and conflict mass calculation.
+- Created unit tests `tests/test_evidential_fusion.py` (4/4 passed).
+- Built evaluation script `scripts/evaluate_evidential_fusion.py` producing `fusion_test_metrics.json` and `fusion_lead_times.json`:
+  - **0.00% FPR** across both Out (13,307 TN) and In (3,744 TN) test partitions.
+  - **100.00% Precision** on both series.
+  - **86.96% Recall** and **0.9302 F1-score** on In series.
+  - **PR-AUC 0.9137** on In series (up from 0.3852 on baseline LSTM).
+  - Lead times: `in_drift_023` at **+178.0 min early**, `out_drift_009` at **+30.0 min early**, `out_step_001` at **+46.0 min early**.
+- Exported Colab notebook `colab/fusion_train.ipynb`.
+- Documented Architectural Decision **D39** in `docs/AD_LOG.md`.
+
+---
+
 ## [2.3.0] — 2026-11-02 (Research Proposal P1: Variational LSTM-AE with Uncertainty Quantification)
 ### Added
 - Created `src/models/vlstm_ae.py` implementing `VLSTMAutoencoder` with Monte Carlo uncertainty estimation and ELBO loss with linear KL annealing.

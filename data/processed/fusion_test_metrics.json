@@ -1,0 +1,44 @@
+{
+  "Out": {
+    "series": "Out",
+    "n_test_samples": 13372,
+    "n_positives": 65,
+    "confusion_matrix": {
+      "TN": 13307,
+      "FP": 0,
+      "FN": 50,
+      "TP": 15
+    },
+    "precision": 1.0,
+    "recall": 0.23076923076923078,
+    "f1": 0.375,
+    "fpr": 0.0,
+    "pr_auc": 0.27713245323186275,
+    "roc_auc": 0.7675740356434728,
+    "mean_vacuity_anomaly": 0.07981618978441335,
+    "mean_vacuity_normal": 0.00545086810894995,
+    "mean_conflict_anomaly": 0.5073725327129326,
+    "mean_conflict_normal": 0.4976294698318046
+  },
+  "In": {
+    "series": "In",
+    "n_test_samples": 3767,
+    "n_positives": 23,
+    "confusion_matrix": {
+      "TN": 3744,
+      "FP": 0,
+      "FN": 3,
+      "TP": 20
+    },
+    "precision": 1.0,
+    "recall": 0.8695652173913043,
+    "f1": 0.9302325581395349,
+    "fpr": 0.0,
+    "pr_auc": 0.9137302177464482,
+    "roc_auc": 0.9346780936454848,
+    "mean_vacuity_anomaly": 0.11509903103275143,
+    "mean_vacuity_normal": 0.020066994693603877,
+    "mean_conflict_anomaly": 0.5360470274941354,
+    "mean_conflict_normal": 0.5065810927146899
+  }
+}

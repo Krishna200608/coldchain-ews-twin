@@ -55,3 +55,4 @@ echo "  Follow live output:      tail -f logs/train_vlstm.log"
 echo "  Attach to tmux session:  tmux attach -t vlstm_training  (Ctrl+B then D to detach)"
 echo "  Re-check this status:    bash scripts/monitor_training.sh"
 echo "=========================================================================="
+

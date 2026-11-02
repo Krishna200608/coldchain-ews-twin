@@ -113,6 +113,11 @@ try:
 except ImportError:
     from src.models.vlstm_ae import VLSTMAutoencoder
 
+try:
+    from fusion.evidential_fusion import EvidentialFusionMLP, dempster_shafer_combine
+except ImportError:
+    from src.fusion.evidential_fusion import EvidentialFusionMLP, dempster_shafer_combine
+
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -444,6 +449,7 @@ class PILSTMMonitor:
             is_alarm = False
             score = np.nan
             dT_dt = 0.0
+            physics_residual = 0.0
             alarm_category = "NORMAL"
         else:
             arr = np.array(self.raw_buffer, dtype=np.float32)
@@ -460,6 +466,15 @@ class PILSTMMonitor:
                 pred_t = self.model(window_t)
                 diff_last = pred_t[0, -1, :] - window_t[0, -1, :]
                 score = float(torch.mean(diff_last ** 2).item())
+
+                # Physics residual at last step
+                T_act = window_t[0, :, 0] * self.t_std + self.t_mean
+                T_hat = pred_t[0, :, 0] * self.t_std + self.t_mean
+                gap_raw = torch.exp(window_t[0, :, 1] * self.g_std + self.g_mean) - 1.0
+                dt_last = torch.clamp(gap_raw[-1], min=1.0)
+                dT_pred = (T_hat[-1] - T_hat[-2]) / dt_last
+                dT_phys = -self.k_cooling * (T_act[-2] - self.T_amb)
+                physics_residual = float(((dT_pred - dT_phys) ** 2).item())
 
             # Instantaneous thermal derivative between last two readings (°C/s)
             prev_temp = self.raw_buffer[-2][0]
@@ -483,6 +498,7 @@ class PILSTMMonitor:
             "score": score,
             "threshold": self.threshold,
             "dT_dt": float(dT_dt),
+            "physics_residual": float(physics_residual),
             "alarm_category": alarm_category,
         }
         self.alarm_records.append(record)
@@ -597,6 +613,186 @@ class VLSTMMonitor:
             "score_aleatoric": aleatoric,
             "score_epistemic": epistemic,
             "uncertainty_pct": uncertainty_pct,
+            "alarm_category": alarm_category,
+        }
+        self.alarm_records.append(record)
+        return record
+
+
+# ══ Dempster-Shafer Evidential Fusion Monitor (Proposal P5) ════════════════════
+
+class EvidentialFusionMonitor:
+    """
+    Live Dempster-Shafer Evidential Deep Learning Multi-Detector Fusion Monitor (Proposal P5).
+    
+    Fuses 7-dimensional multi-detector evidence:
+    1. Baseline temperature normalized deviation: (T - b_mean) / b_std
+    2. Isolation Forest decision score: -if_score
+    3. Baseline LSTM sequence reconstruction error: lstm_score
+    4. VLSTM aleatoric uncertainty: aleatoric_score
+    5. VLSTM epistemic uncertainty: epistemic_score
+    6. PILSTM thermodynamic cooling residual: physics_residual
+    7. Sampling gap: normalized log(1 + gap_seconds)
+    
+    Produces Dirichlet belief parameters (alpha_normal, alpha_alarm), yielding:
+    - prob_alarm: Calibrated anomaly probability alpha_alarm / S in [0, 1]
+    - vacuity: Total epistemic ignorance u = 2 / S in [0, 1]
+    - conflict_mass_K: Inter-detector conflict mass (Dempster-Shafer rule)
+    - alarm: True when prob_alarm >= prob_threshold and vacuity <= max_vacuity
+    - alarm_category: EVIDENTIAL_HIGH_CONFIDENCE_ALARM, EVIDENTIAL_MODERATE_CONFIDENCE_ALARM,
+                      or EVIDENTIAL_SUPPRESSED_HIGH_VACUITY
+    """
+
+    def __init__(
+        self,
+        series_name: str,
+        model_path: pathlib.Path,
+        stats_path: pathlib.Path,
+        norm_stats_path: pathlib.Path | None = None,
+        prob_threshold: float = 0.5,
+        max_vacuity: float = 0.85,
+        device: str = "cpu",
+        submonitors: dict[str, Any] | None = None,
+    ):
+        self.series_name = series_name
+        self.device = torch.device(device)
+        self.prob_threshold = float(prob_threshold)
+        self.max_vacuity = float(max_vacuity)
+        self.submonitors = submonitors
+        self.alarm_records: list[dict[str, Any]] = []
+
+        # Load feature normalization stats from fusion_eval_stats.json
+        with open(stats_path, "r", encoding="utf-8") as f:
+            stats_dict = json.load(f)
+        s_key = "Out" if series_name.lower() == "out" else "In"
+        self.feat_mean = np.array(stats_dict[s_key]["feat_mean"], dtype=np.float32).reshape(1, -1)
+        self.feat_std = np.array(stats_dict[s_key]["feat_std"], dtype=np.float32).reshape(1, -1)
+        self.feat_std[self.feat_std < 1e-6] = 1.0
+
+        # Load LSTM gap normalization stats
+        if norm_stats_path is None:
+            norm_stats_path = PROCESSED_DIR / f"lstm_norm_stats_{series_name.lower()}.json"
+        if pathlib.Path(norm_stats_path).exists():
+            with open(norm_stats_path, "r", encoding="utf-8") as f:
+                norm_stats = json.load(f)
+            self.g_mean = float(norm_stats["log_gap_seconds_mean"])
+            self.g_std = float(norm_stats["log_gap_seconds_std"])
+        else:
+            self.g_mean = 0.0
+            self.g_std = 1.0
+
+        # Load EvidentialFusionMLP
+        self.model = EvidentialFusionMLP(input_dim=7, hidden_dim=32, latent_dim=16)
+        checkpoint = torch.load(model_path, map_location=self.device)
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+            self.model.load_state_dict(checkpoint["model_state_dict"])
+        else:
+            self.model.load_state_dict(checkpoint)
+        self.model.to(self.device)
+        self.model.eval()
+
+    def process_event(
+        self,
+        event: dict[str, Any],
+        detector_records: dict[str, dict[str, Any]] | None = None,
+        feature_vector: np.ndarray | None = None,
+    ) -> dict[str, Any]:
+        """
+        Process incoming event through Evidential Deep Learning fusion.
+        Args:
+            event: Dict containing telemetry keys: ts, temp_injected, gap_seconds.
+            detector_records: Optional dict containing records from upstream monitors
+                              {'baseline': ..., 'if': ..., 'lstm': ..., 'pilstm': ..., 'vlstm': ...}
+            feature_vector: Optional pre-constructed 7-dim numpy array.
+        """
+        if feature_vector is not None:
+            raw_feat = np.asarray(feature_vector, dtype=np.float32).reshape(1, -1)
+            is_valid = not np.isnan(raw_feat).any()
+        elif detector_records is not None:
+            b_rec = detector_records.get("baseline", {})
+            i_rec = detector_records.get("if", {})
+            l_rec = detector_records.get("lstm", {})
+            p_rec = detector_records.get("pilstm", {})
+            v_rec = detector_records.get("vlstm", {})
+
+            b_score = b_rec.get("score", np.nan)
+            i_score = i_rec.get("score", np.nan)
+            l_score = l_rec.get("score", np.nan)
+            v_aleatoric = v_rec.get("score_aleatoric", np.nan)
+            v_epistemic = v_rec.get("score_epistemic", np.nan)
+            phys_res = p_rec.get("physics_residual", 0.0)
+            gap = float(event.get("gap_seconds", 0.0))
+            log_gap = (np.log1p(gap) - self.g_mean) / self.g_std
+
+            if any(np.isnan(x) for x in [b_score, i_score, l_score, v_aleatoric, v_epistemic]):
+                is_valid = False
+                raw_feat = None
+            else:
+                is_valid = True
+                raw_feat = np.array(
+                    [[b_score, -i_score, l_score, v_aleatoric, v_epistemic, phys_res, log_gap]],
+                    dtype=np.float32,
+                )
+        elif self.submonitors is not None:
+            # Delegate to internal submonitors
+            sub_records = {}
+            for name, mon in self.submonitors.items():
+                sub_records[name] = mon.process_event(event)
+            return self.process_event(event, detector_records=sub_records)
+        else:
+            is_valid = False
+            raw_feat = None
+
+        if not is_valid or raw_feat is None:
+            is_alarm = False
+            prob_alarm = 0.0
+            vacuity = 1.0
+            conflict_K = 0.0
+            alarm_category = "NORMAL"
+            evidence_normal = 0.0
+            evidence_alarm = 0.0
+        else:
+            feat_norm = (raw_feat - self.feat_mean) / self.feat_std
+            feat_t = torch.from_numpy(feat_norm).to(self.device)
+            with torch.no_grad():
+                prob_t, vacuity_t, evidence_t = self.model(feat_t)
+                prob_alarm = float(prob_t.item())
+                vacuity = float(vacuity_t.item())
+                evidence_normal = float(evidence_t[0, 0].item())
+                evidence_alarm = float(evidence_t[0, 1].item())
+
+            # Dempster-Shafer conflict mass calculation
+            p_if = float(1.0 / (1.0 + np.exp(min(50.0, max(-50.0, raw_feat[0, 1])))))
+            p_lstm = float(min(1.0, max(0.0, raw_feat[0, 2])))
+            p_phys = float(min(1.0, max(0.0, raw_feat[0, 5])))
+            _, _, conflict_K = dempster_shafer_combine(p_if, p_lstm, p_phys)
+
+            # Evidential Decision Rule
+            if prob_alarm >= self.prob_threshold:
+                if vacuity <= self.max_vacuity:
+                    is_alarm = True
+                    if vacuity < 0.30:
+                        alarm_category = "EVIDENTIAL_HIGH_CONFIDENCE_ALARM"
+                    else:
+                        alarm_category = "EVIDENTIAL_MODERATE_CONFIDENCE_ALARM"
+                else:
+                    is_alarm = False
+                    alarm_category = "EVIDENTIAL_SUPPRESSED_HIGH_VACUITY"
+            else:
+                is_alarm = False
+                alarm_category = "NORMAL"
+
+        record = {
+            "ts": event["ts"],
+            "timestamp": event["ts"],
+            "series": self.series_name,
+            "alarm": is_alarm,
+            "prob_alarm": prob_alarm,
+            "score": prob_alarm,
+            "vacuity": vacuity,
+            "conflict_mass_K": conflict_K,
+            "evidence_normal": evidence_normal,
+            "evidence_alarm": evidence_alarm,
             "alarm_category": alarm_category,
         }
         self.alarm_records.append(record)
