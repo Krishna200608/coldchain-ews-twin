@@ -90,3 +90,4 @@ In addition to the PDFs above, the project incorporates methodology and theoreti
 - **Meng, X. et al. (2024):** *A cost-effective over-temperature alarm system for cold chain delivery.* *Journal of Food Engineering*, 368, 111914. Formulates hardware-constrained threshold alarms for delivery vans.
 - **Wu, W. et al. (2023):** *Internet of Everything and Digital Twin enabled service platform for cold chain logistics.* *Journal of Industrial Information Integration*, 33, 100443. Details cloud-edge telemetry pipelines.
 - **Page, E. S. (1954):** *Continuous Inspection Schemes.* *Biometrika*, 41(1–2), 100–115. Introduces CUSUM sequential drift detection utilized in our Breakthrough Pipeline 4.
+
