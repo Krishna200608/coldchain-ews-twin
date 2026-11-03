@@ -3,7 +3,8 @@
 %          Detection Using Anomaly Detection (Topic 21)
 % Author: Krishna Sikheriya (Roll No.: IIT2023139), 7th Sem B.Tech (IT)
 % Institution: Indian Institute of Information Technology Allahabad (IIITA)
-% Instructor: Netranand Pathak
+% Instructor: Dr. Shashi Kant Rai
+% Supervisor: Netranand Pathak
 % Subject: Managing Corporate Entrepreneurship
 % Recommended Compilers in Overleaf: pdfLaTeX / LuaLaTeX / XeLaTeX
 % ==============================================================================
@@ -35,7 +36,7 @@
     bottom=2.6cm,
     left=2.8cm,
     right=2.6cm,
-    headheight=16pt,
+    headheight=22pt,
     headsep=0.8cm,
     footskip=1.2cm
 ]{geometry}
@@ -310,6 +311,7 @@
 % ------------------------------------------------------------------------------
 % TITLE PAGE
 % ------------------------------------------------------------------------------
+\hypersetup{pageanchor=false}
 \begin{titlepage}
     \begin{center}
         \vspace*{-1.2cm}
@@ -334,19 +336,20 @@
         % Subtitle & Context
         {\large\sffamily\color{IceTeal}\textbf{Semester Course Project}}\\[0.15cm]
         {\normalsize\sffamily\color{DarkSlate} Subject: \textbf{Managing Corporate Entrepreneurship}}\\[0.15cm]
-%         {\normalsize\sffamily\color{DarkSlate} Instructor: \textbf{Netranand Pathak}}\\[0.6cm]
+        {\normalsize\sffamily\color{DarkSlate} Instructor: \textbf{Dr. Shashi Kant Rai}}\\[0.15cm]
+        {\normalsize\sffamily\color{DarkSlate} Supervisor: \textbf{Netranand Pathak}}\\[0.6cm]
 
         \textcolor{IceTeal}{\rule{0.85\textwidth}{1.8pt}}\\[1.0cm]
 
         % Student & Submission Details in Structured Table
-        \begin{tabularx}{0.88\textwidth}{r l}
+        \begin{tabular}{r l}
             \textbf{\sffamily Prepared by:} & \sffamily Krishna Sikheriya \\
             \textbf{\sffamily Roll Number:} & \sffamily IIT2023139 \\
             \textbf{\sffamily Academic Programme:} & \sffamily B.Tech (Information Technology) --- 7th Semester \\
             \textbf{\sffamily Institution:} & \sffamily Indian Institute of Information Technology, Allahabad \\
             \textbf{\sffamily Academic Year:} & \sffamily 2026--27 \\
             \textbf{\sffamily Submission Date:} & \sffamily \rule{3.5cm}{0.4pt} \\
-        \end{tabularx}
+        \end{tabular}
 
         \vspace{1.0cm}
 
@@ -362,6 +365,7 @@
 
     \end{center}
 \end{titlepage}
+\hypersetup{pageanchor=true}
 
 \pagenumbering{roman}
 
@@ -624,10 +628,11 @@ The system operates as a linear pipeline of five stages, each verified before th
 \label{sec:data_source}
 
 \begin{proxynotice}
+\raggedright
 The dataset used throughout this project, Kaggle \texttt{atulanandjha/\allowbreak temperature-readings-\allowbreak iot-devices}, is a real IoT temperature-sensor log collected for generic device monitoring. It has \textbf{no real multi-sensor spatial topology} (the \texttt{room\_id/id} field is constant, \enquote{Room Admin}, across all 97,606 readings), \textbf{no true refrigeration temperature range} (readings span 21--51\textdegree{}C, far above any real cold-chain setpoint), and \textbf{no ground-truth disruption labels of any kind}. It is used exclusively as a \textbf{structural proxy}: its irregular sampling cadence, sensor-level noise, and single-stream \enquote{Out}/\enquote{In} tag split provide a realistic substrate for building and stress-testing an anomaly-detection pipeline, but every result in this report describes performance on this proxy construct, not on real cold-chain telemetry. This caveat is repeated at every point in this report where empirical results are presented.
 \end{proxynotice}
 
-Table~\ref{tab:data_profile} summarises the dataset's key empirical properties as profiled in Milestone 1 (\texttt{docs/data\_profile.md}, \texttt{notebooks/\allowbreak 01\_eda.ipynb}).
+{\raggedright Table~\ref{tab:data_profile} summarises the dataset's key empirical properties as profiled in Milestone 1 (\texttt{docs/data\_profile.md}, \texttt{notebooks/\allowbreak 01\_eda.ipynb}).\par}
 
 \begin{table}[H]
 \centering
@@ -703,7 +708,7 @@ s(x, n) = 2^{-\frac{E(h(x))}{c(n)}}
 
 where $h(x)$ is the path length required to isolate $x$ in a given tree, $E(h(x))$ is its average path length across all trees, and $c(n) = 2H(n-1) - \frac{2(n-1)}{n}$ is the average path length of an unsuccessful binary search tree, used to normalise $s(x,n)$ into $[0,1]$, with values closer to 1 indicating a higher likelihood of anomaly.
 
-\textbf{Features:} \texttt{[temp\_injected, gap\_seconds, rolling\_mean\_if, rolling\_std\_if]}, with the rolling features recomputed from the injected (not stale clean) temperature column using a causal, trailing window of length 10 -- audited in Milestone 5a (AD Log D22) and confirmed to use no \texttt{center=True} look-ahead. \textbf{Split:} chronological 70/30, cutoff \texttt{2018-10-29 11:10:47.999999}, giving Out train/test $= 63{,}887 / 13{,}372$ and In train/test $= 16{,}577 / 3{,}767$. \textbf{Hyperparameters:} \texttt{contamination='auto'} (untuned, to avoid label leakage from the synthetic injections).
+{\raggedright \textbf{Features:} \texttt{[temp\_injected, gap\_seconds, rolling\_mean\_if, rolling\_std\_if]}, with the rolling features recomputed from the injected (not stale clean) temperature column using a causal, trailing window of length 10 -- audited in Milestone 5a (AD Log D22) and confirmed to use no \texttt{center=True} look-ahead. \textbf{Split:} chronological 70/30, cutoff \texttt{2018-10-29 11:10:47.999999}, giving Out train/test $= 63{,}887 / 13{,}372$ and In train/test $= 16{,}577 / 3{,}767$. \textbf{Hyperparameters:} \texttt{contamination='auto'} (untuned, to avoid label leakage from the synthetic injections).\par}
 
 \section{Stage 3b: LSTM-Autoencoder}
 \label{sec:methodology_lstm}
@@ -759,6 +764,13 @@ Standard deep neural networks are notoriously overconfident during out-of-distri
 \end{equation}
 This decomposes total prediction variance into aleatoric uncertainty (inherent sensor measurement noise) and epistemic uncertainty (model unfamiliarity), preventing false alarms during edge network transmission dropouts.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_breakthrough_p1_uncertainty.png}
+    \caption{Proposal P1: Variational LSTM-Autoencoder uncertainty decomposition ($N=15$ Monte Carlo forward passes). High epistemic uncertainty identifies true structural failure (flatline onset on \texttt{out\_flatline\_012}), while aleatoric noise flags unconfident edge network jitter.}
+    \label{fig:vlstm_uncertainty}
+\end{figure}
+
 \subsection{P2: Physics-Informed LSTM-Autoencoder (AD Log D37)}
 Recognizing that thermal telemetry is constrained by thermodynamics, we embedded Newton's Law of Cooling directly into the autoencoder loss function, drawing on Physics-Informed Neural Networks \parencite{raissi2019physics}:
 \begin{equation}
@@ -767,6 +779,13 @@ Recognizing that thermal telemetry is constrained by thermodynamics, we embedded
 \end{equation}
 with cooling rate $k = 0.05\text{ min}^{-1}$ and $\lambda_{\text{phys}} = 0.15$. The differential penalty penalizes unphysical thermal transitions, eliminating drift adaptation lag and distinguishing physical excursions from unphysical sensor artifacts.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_breakthrough_p2_physics.png}
+    \caption{Proposal P2: Physics-Informed LSTM-Autoencoder on \texttt{out\_drift\_009}. Newton's cooling loss penalizes unphysical heating, converting the baseline LSTM's 14-minute lag into an \textbf{+18.0 min early warning} (+32 min net gain) and slashing false alarms by 38.3\%.}
+    \label{fig:pilstm_cooling}
+\end{figure}
+
 \subsection{P3: Multi-Horizon Quantile Forecaster (AD Log D38)}
 Rather than evaluating only concurrent anomalies, we implemented an autoregressive Temporal Fusion Transformer (TFT) \parencite{lim2021temporal} forecasting future temperature trajectories across multi-step horizons $\tau \in \{30, 60, 120\}\text{ minutes}$ using the Quantile Pinball Loss for $q \in \{0.10, 0.50, 0.90\}$:
 \begin{equation}
@@ -774,6 +793,13 @@ Rather than evaluating only concurrent anomalies, we implemented an autoregressi
 \label{eq:pinball_loss}
 \end{equation}
 When the upper 90th percentile forecast $\hat{y}^{(0.90)}(t + \tau)$ breaches safety limits, a pre-emptive alarm fires hours before cargo heating commences.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_breakthrough_p3_tft_forecast.png}
+    \caption{Proposal P3: Multi-Horizon Quantile Forecaster (TFT) on \texttt{in\_drift\_023}. The conservative 90th percentile forecast breaches the critical boundary at 07:56:00, unlocking \textbf{+189.0 minutes} (>3.1 hours) of pre-emptive decision runway before irreversibility at 11:05:00.}
+    \label{fig:tft_forecast}
+\end{figure}
 
 \subsection{P4: Contamination-Guarded Kalman-CUSUM Filter (AD Log D39)}
 We replaced fixed boundaries with a dynamic 1D Kalman state estimator coupled to a two-sided Cumulative Sum (CUSUM) change-point detector \parencite{page1954continuous}. When anomaly probability exceeds 0.70, Kalman state updates are frozen (Contamination Guard), preventing the adaptive threshold from absorbing creeping drift.
@@ -785,6 +811,13 @@ b_{\text{normal}} + b_{\text{anomaly}} + u = 1, \quad u = \frac{K}{S}
 \label{eq:edl_belief}
 \end{equation}
 Evidence sources are combined via Dempster's Rule of Combination. Alarms fire only when $b_{\text{anomaly}} > 0.60$ and vacuity $u < 0.30$, completely eliminating false positives.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_breakthrough_p5_evidential_fusion.png}
+    \caption{Proposal P5: Dempster-Shafer Evidential Multimodal Fusion architecture. Fusing physics residuals, autoencoder reconstruction error, and uncertainty into Dirichlet belief masses achieves a \textbf{0.00\% False Positive Rate} with 100\% Precision across the test partition.}
+    \label{fig:evidential_fusion}
+\end{figure}
 
 % ==============================================================================
 % CHAPTER 6: RESULTS AND FINDINGS
@@ -883,7 +916,8 @@ Isolation Forest achieves substantially higher recall on both series (80.0\% Out
 \section{Digital-Twin Replay and Cross-Check Verification}
 \label{sec:res_twin}
 
-The SimPy digital twin's replay of the real sensor stream was verified byte-exact against the source data: zero value mismatches, $0.00\times10^{0}$s simulated-time discrepancy, full replay completing in 6.03 seconds of wall-clock time. With the three live monitors (\texttt{BaselineMonitor}, \texttt{IFMonitor}, \texttt{LSTMMonitor}) wired into the Destination stage, the twin's live alerts were cross-checked row-by-row against the offline batch-evaluation results (\texttt{data/processed/twin\_crosscheck\_report.csv}, 90 rows $=$ 30 injections $\times$ 3 detectors):
+{\raggedright The SimPy digital twin's replay of the real sensor stream was verified byte-exact against the source data: zero value mismatches, $0.00\times10^{0}$s simulated-time discrepancy, full replay completing in 6.03 seconds of wall-clock time. With the three live monitors (\texttt{BaselineMonitor}, \texttt{IFMonitor}, \texttt{LSTMMonitor}) wired into the Destination stage, the twin's live alerts were cross-checked row-by-row against the offline batch-evaluation results (\texttt{data/processed/twin\_crosscheck\_report.csv}, 90 rows $=$ 30 injections $\times$ 3 detectors):
+\par}
 
 \begin{keyfinding}[RQ3 Resolved: 100\% Live/Batch Parity]
 Across all 30 injections and 3 detectors, 42 comparisons were scientifically applicable (all 30 baseline comparisons, plus the 6 test-side Isolation Forest and 6 test-side LSTM comparisons); every one of these 42 matched exactly (\texttt{match = True}, 0 mismatches). The remaining 48 comparisons (train-side Isolation Forest and LSTM results) are correctly excluded from performance claims and marked \texttt{not\_applicable}, retained only as demonstration material. The live digital twin and the offline batch evaluation never silently diverge.
@@ -925,6 +959,20 @@ The advanced research paradigms resolve both core limitations of the initial bas
     \item \textbf{Multi-Hour Predictive Runway (P3):} Multi-horizon quantile forecasting extends actionable runway to \textbf{+189.0 minutes} (>3.1 hours) before cargo boundary breach, transforming reactive monitoring into predictive prevention.
 \end{enumerate}
 \end{keyfinding}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/fig_breakthrough_leadtimes.png}
+    \caption{Early-warning lead time comparison across all seven paradigms on test-set disruptions. Demonstrates the progression from reactive baseline alarms (0.0 min) to classical isolation (+64 min), physics regularization (+18 min), evidential fusion (+178 min), and multi-horizon quantile forecasting (+189 min).}
+    \label{fig:breakthrough_leadtimes}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_breakthrough_master_tradeoff.png}
+    \caption{Operational Pareto frontier comparing False Positive Rate (FPR, \%) against Early-Warning Lead Time (minutes). Evidential Deep Learning (EDL) occupies the optimal operational corridor with 0.00\% FPR, 100\% precision, and +178.0 minutes of lead time.}
+    \label{fig:breakthrough_tradeoff}
+\end{figure}
 
 % ==============================================================================
 % CHAPTER 7: METHODOLOGICAL JOURNEY
@@ -973,13 +1021,15 @@ To make the digital twin's live behaviour directly inspectable rather than only 
 \end{center}
 
 \begin{limitationbox}[Screenshots Pending]
+\raggedright
 This chapter describes the dashboard's verified, documented behaviour (\texttt{dashboard/README.md}) in full, but does not yet include screenshots of the live interface. Screenshots will be added once supplied, so that this chapter's figures are genuine captures of the deployed application rather than an artist's impression of it.
 \end{limitationbox}
 
 \section{Zero-Duplication Architecture}
 \label{sec:dash_architecture}
 
-The dashboard imports \texttt{BaselineMonitor}, \texttt{IFMonitor}, and \texttt{LSTMMonitor} directly from \texttt{src/twin\_monitors.py}, and the same stable event-sorting logic from \texttt{src/digital\_twin.py} (AD Log D27): no detection logic is re-implemented for presentation purposes, so the dashboard cannot silently drift from the verified pipeline described in \cref{chap:methodology}. A startup verification gate (D32) checks for the presence of all seven required model and data artefacts before permitting any playback, halting with explicit remediation instructions if any are missing.
+{\raggedright The dashboard imports \texttt{BaselineMonitor}, \texttt{IFMonitor}, and \texttt{LSTMMonitor} directly from \texttt{src/twin\_monitors.py}, and the same stable event-sorting logic from \texttt{src/digital\_twin.py} (AD Log D27): no detection logic is re-implemented for presentation purposes, so the dashboard cannot silently drift from the verified pipeline described in \cref{chap:methodology}. A startup verification gate (D32) checks for the presence of all seven required model and data artefacts before permitting any playback, halting with explicit remediation instructions if any are missing.
+\par}
 
 \section{Operating Modes}
 \label{sec:dash_modes}
@@ -1056,7 +1106,7 @@ Every result is reported with complete scientific integrity via a 40-entry appen
 \begin{enumerate}[leftmargin=*,itemsep=4pt]
     \item \textbf{Real Cold-Chain Telemetry Validation:} Partnering with a commercial cold-chain logistics carrier to obtain real, labelled, multi-sensor refrigerated transport data to evaluate how physics-informed evidential fusion generalizes to live commercial fleets.
     \item \textbf{Embedded Edge Deployment (TinyML):} Quantizing the Physics-Informed LSTM and Evidential Fusion networks to 8-bit integer representation (INT8) via ONNX Runtime and TensorFlow Lite for micro-watt execution on edge telematics gateways.
-    \item \textbf{Exogenous Weather & Route Context Integration:} Augmenting the Temporal Fusion Transformer with external real-time ambient weather forecasts, solar irradiation models, and GPS traffic congestion telemetry to refine long-horizon quantile risk bounds.
+    \item \textbf{Exogenous Weather \& Route Context Integration:} Augmenting the Temporal Fusion Transformer with external real-time ambient weather forecasts, solar irradiation models, and GPS traffic congestion telemetry to refine long-horizon quantile risk bounds.
     \item \textbf{Expanded Multi-Node Fleet Network Simulation:} Scaling the SimPy digital twin from a single transit journey to a national multimodal distribution network with automated route re-dispatching upon early-warning alarm triggers.
 \end{enumerate}
 

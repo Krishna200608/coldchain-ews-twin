@@ -304,6 +304,9 @@ $$\hat{\mathbf{X}}_t^{(i)} = f_{\theta, \mathbf{z}_i}(\mathbf{X}_t), \quad \math
 **Operational Verification:**  
 On flatline disruption `out_flatline_012`, the Variational LSTM detected the sensor freeze **+4.0 minutes early** with an epistemic uncertainty of only 9.69%, classifying it as a `HIGH_CONFIDENCE_ALARM`. During edge network dropouts, high uncertainty flags the event as unconfident, suppressing spurious notifications.
 
+![Figure 4: Proposal P1 Uncertainty Quantification](figures/fig_breakthrough_p1_uncertainty.png)
+*Figure 4: Monte Carlo Dropout uncertainty decomposition ($N=15$) across nominal telemetry, sensor flatline (`out_flatline_012`), and edge network jitter. High epistemic uncertainty identifies structural failures, while high aleatoric noise flags unconfident transmission drops.*
+
 ---
 
 ### 8.2 Proposal P2: Physics-Informed LSTM-Autoencoder (Decision D37)
@@ -324,6 +327,9 @@ with cooling constant $k = 0.05 \text{ min}^{-1}$ and regularizer weight $\lambd
 2. **Eliminating Adaptation Lag:** On `out_drift_009`, the baseline LSTM's -14.0 minute lag was transformed into an **+18.0 minute early warning** (+32 minutes of net operational gain!). The thermodynamic penalty prevented the hidden state from adapting to the unphysical heating rate.
 3. **Artifact Categorization:** The model automatically segregates violations: events with high reconstruction error but zero physics residual are tagged as `SENSOR_ARTIFACT`, whereas events violating the thermal differential are flagged as `GENUINE_THERMAL_EXCURSION`.
 
+![Figure 5: Proposal P2 Physics-Informed Cooling & Lag Elimination](figures/fig_breakthrough_p2_physics.png)
+*Figure 5: Newton cooling regularization ($dT/dt = -k(T - T_{amb})$) penalizes unphysical rates of thermal transition, converting the baseline LSTM's 14-minute lag on `out_drift_009` into an +18.0 min early warning (+32 min net operational gain) and slashing ambient false alarms by 38.3%.*
+
 ---
 
 ### 8.3 Proposal P3: Temporal Fusion Transformer / Multi-Horizon Quantile Forecaster (Decision D38)
@@ -340,6 +346,9 @@ The 90th percentile forecast $\hat{y}^{(0.90)}(t + \tau)$ represents the conserv
 - **On `in_drift_023`:** The forecaster delivered **+189.0 minutes** (+3.15 hours) of pre-emptive early warning!
 - **On `out_drift_009`:** Achieved **+56.0 minutes** of pre-emptive early warning.
 - **Logistics Impact:** Over three hours of advance warning provides dispatchers ample operational runway to reroute vehicles, connect auxiliary refrigeration power, or swap towing units before cargo degradation occurs.
+
+![Figure 6: Proposal P3 Multi-Horizon Quantile Forecasting](figures/fig_breakthrough_p3_tft_forecast.png)
+*Figure 6: Temporal Fusion Transformer multi-horizon quantile forecast fan chart on `in_drift_023`. The conservative 90th percentile upper risk frontier breaches the $2\sigma$ safety envelope at 07:56:00, delivering +189.0 minutes (>3.1 hours) of predictive runway before cargo reaches irreversibility at 11:05:00.*
 
 ---
 
@@ -387,6 +396,9 @@ An alarm is raised if and only if $b_{\text{anomaly}} > 0.60$ and vacuity $u < 0
 3. **Classification Metrics:** Recall of **86.96%**, **F1 score of 0.9302**, and **In-stream PR-AUC of 0.9137** (compared to 0.3852 for baseline LSTM).
 4. **Preserved Lead Times:** Maintained outstanding operational lead times: **+178.0 minutes** on `in_drift_023`, **+30.0 minutes** on `out_drift_009`, **+46.0 minutes** on `out_step_001`, and **+16.0 minutes** on `in_step_018`.
 
+![Figure 7: Proposal P5 Evidential Multimodal Fusion](figures/fig_breakthrough_p5_evidential_fusion.png)
+*Figure 7: Multi-track Dempster-Shafer evidential fusion architecture combining physics residual, autoencoder reconstruction error, and uncertainty into Dirichlet belief masses, achieving a 0.00% False Positive Rate while retaining robust early warnings.*
+
 ---
 
 ## 9. Master Empirical Benchmark Matrix & Comparative Analysis
@@ -405,6 +417,12 @@ Table 3 provides the comprehensive, single-source-of-truth performance benchmark
 | **P5: Evidential Fusion (EDL)** | **0.00%** | **0.00%** | **1.0000** | **86.96%** | **0.9302** | **0.9137** | **+178.0 min** | **+30.0 min** |
 
 *(Note: In accordance with Decision D26, all metrics are strictly evaluated on the out-of-sample test partition. True anomaly prevalence is ~0.5%, making F1=0.9302 under zero false positives an extraordinary empirical outcome).*
+
+![Figure 8: Early-Warning Lead Times Benchmark Across All Paradigms](figures/fig_breakthrough_leadtimes.png)
+*Figure 8: Early-warning lead time comparison across all seven paradigms on test-set disruptions. The progression from baseline reactive alarms (0.0 min) to classical isolation (+64 min), physics regularization (+18 min), evidential fusion (+178 min), and multi-horizon forecasting (+189 min) demonstrates dramatic operational runway expansion.*
+
+![Figure 9: Operational False Alarm vs. Early-Warning Runway Trade-off](figures/fig_breakthrough_master_tradeoff.png)
+*Figure 9: Operational Pareto frontier comparing False Positive Rate (FPR, %) against Early-Warning Lead Time (minutes). Evidential Deep Learning occupies the optimal operational corridor with 0.00% FPR and +178.0 minutes of lead time.*
 
 ---
 
@@ -480,3 +498,4 @@ Subsequent research will explore deploying physics-informed evidential fusion on
 11. **Liu, F. T., Ting, K. M., & Zhou, Z.-H.** (2008). Isolation Forest. *2008 Eighth IEEE International Conference on Data Mining (ICDM)*, 413–422.
 12. **Malhotra, P., Ramakrishnan, A., Anand, G., Vig, L., Agarwal, P., & Shroff, G.** (2016). LSTM-based Encoder-Decoder for Multi-sensor Anomaly Detection. *ICML 2016 Anomaly Detection Workshop*.
 13. **Anand Jha, A.** (2018). Temperature Readings: IoT Devices Telemetry Dataset. *Kaggle Datasets*.
+

@@ -349,6 +349,7 @@ Initial Findings | Lead-Time Benchmark on Out-of-Sample Test Injections
 
 ### Recommended Canva Layout
 - **Style:** 2-Card Horizontal Split (Left Card: P1 Variational LSTM | Right Card: P2 Physics-Informed LSTM).
+- **Embedded Figure Asset:** Drag and drop `figures/fig_breakthrough_p2_physics.png` or `figures/fig_breakthrough_p1_uncertainty.png` into the visual panel.
 - **Icons to search in Canva:** `brain network`, `temperature cold`, `balance scale`.
 
 ### Top Header Bar
@@ -394,7 +395,8 @@ Key Physics Gain: Incorporating Newton cooling converted a 14-minute deep learni
 ## Slide 10: Research Breakthrough 3 — Multi-Horizon Forecasting
 
 ### Recommended Canva Layout
-- **Style:** Left Column (Multi-Horizon Architecture & Lead Time Gains) | Right Column (Quantile Fan Chart Concept).
+- **Style:** Left Column (Multi-Horizon Architecture & Lead Time Gains) | Right Column (Quantile Fan Chart).
+- **Embedded Figure Asset:** Drag and drop `figures/fig_breakthrough_p3_tft_forecast.png` into the right column.
 - **Icons to search in Canva:** `crystal ball forecast`, `chart line trend`, `clock fast forward`.
 
 ### Top Header Bar
@@ -439,6 +441,7 @@ Operational Decision Runway
 
 ### Recommended Canva Layout
 - **Style:** 2-Card Horizontal Split (Left Card: P4 Kalman CUSUM | Right Card: P5 Evidential Fusion).
+- **Embedded Figure Asset:** Drag and drop `figures/fig_breakthrough_p5_evidential_fusion.png` into the presentation slide.
 - **Icons to search in Canva:** `filter funnel`, `shield checkmark`, `target bullseye`.
 
 ### Top Header Bar
@@ -484,7 +487,8 @@ The Evidential Fusion Breakthrough: 0.00% False Positive Rate, 100% Precision, F
 ## Slide 12: Master Benchmark & Comparative Performance Matrix
 
 ### Recommended Canva Layout
-- **Style:** Comprehensive 7-Row Performance Comparison Table.
+- **Style:** Comprehensive 7-Row Performance Comparison Table with Visual Plot Badges.
+- **Embedded Figure Assets:** Drag and drop `figures/fig_breakthrough_leadtimes.png` and `figures/fig_breakthrough_master_tradeoff.png`.
 - **Header Row:** Deep Navy (`#0E264D`) with White Text.
 - **Highlight:** Highlight the Evidential Fusion row in subtle Gold or Green.
 

@@ -651,71 +651,49 @@ def create_deck():
         "Proposals P1 (Variational LSTM) & P2 (Physics-Informed LSTM Newton Cooling)"
     )
 
-    card_p1 = slide9.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.4), Inches(5.7), Inches(4.4))
+    card_p1 = slide9.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.35), Inches(5.7), Inches(4.55))
     card_p1.fill.solid()
     card_p1.fill.fore_color.rgb = COLOR_LIGHT_BG
     card_p1.line.color.rgb = COLOR_BORDER
     tf_p1 = card_p1.text_frame
     tf_p1.word_wrap = True
     p = tf_p1.paragraphs[0]
-    p.text = "Proposal P1: Variational LSTM-AE with Uncertainty"
-    p.font.size = Pt(15)
+    p.text = "P1: Uncertainty & P2: Physics-Informed DL"
+    p.font.size = Pt(14)
     p.font.bold = True
     p.font.color.rgb = COLOR_NAVY
-    p.space_after = Pt(8)
+    p.space_after = Pt(6)
 
     p1_bullets = [
-        "Mechanism: Implements Monte Carlo Dropout (N=15 forward passes during inference) to decompose total prediction variance into aleatoric (sensor noise) and epistemic (model unfamiliarity) uncertainty.",
-        "Operational Impact: Eliminates unconfident alerts during edge network jitter. On flatline event out_flatline_012, detected +4.0 min early with 9.69% uncertainty, triggering a HIGH_CONFIDENCE_ALARM.",
-        "Benchmark: In PR-AUC improved to 0.3912 (vs 0.3852 baseline LSTM)."
+        "P1 Variational LSTM-AE (Uncertainty Quantification):\n  • Monte Carlo Dropout (N=15) decomposes total variance into aleatoric (sensor noise) vs epistemic (structural fault) uncertainty.\n  • Detected flatline out_flatline_012 +4.0 min early with 9.69% epistemic uncertainty (HIGH_CONFIDENCE_ALARM).",
+        "P2 Physics-Informed LSTM-AE (Newton Cooling):\n  • Loss = MSE + λ_phys · ||dT/dt + k(T - T_amb)||^2.\n  • Enforces thermodynamic rate limits, slashing ambient false positive rate from 20.28% down to 12.52% (-38.3% relative).\n  • Converts baseline LSTM's -14.0 min lag on out_drift_009 into +18.0 min early warning (+32 min net operational gain!)."
     ]
     for b in p1_bullets:
         bp = tf_p1.add_paragraph()
         bp.text = f"• {b}"
-        bp.font.size = Pt(11)
+        bp.font.size = Pt(10)
         bp.font.color.rgb = COLOR_DARK
-        bp.space_after = Pt(8)
+        bp.space_after = Pt(6)
 
-    card_p2 = slide9.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.8), Inches(1.4), Inches(5.7), Inches(4.4))
-    card_p2.fill.solid()
-    card_p2.fill.fore_color.rgb = COLOR_LIGHT_BG
-    card_p2.line.color.rgb = COLOR_BORDER
-    tf_p2 = card_p2.text_frame
-    tf_p2.word_wrap = True
-    p = tf_p2.paragraphs[0]
-    p.text = "Proposal P2: Physics-Informed LSTM-AE (PILSTM)"
-    p.font.size = Pt(15)
-    p.font.bold = True
-    p.font.color.rgb = COLOR_NAVY
-    p.space_after = Pt(8)
+    # Embed Figure: P2 Physics-Informed Cooling & Lag Elimination
+    fig_p2 = os.path.join(FIG_DIR, "fig_breakthrough_p2_physics.png")
+    if os.path.exists(fig_p2):
+        slide9.shapes.add_picture(fig_p2, Inches(6.8), Inches(1.35), width=Inches(5.7))
 
-    p2_bullets = [
-        "Mechanism: Augments reconstruction MSE with a differential thermal physics loss: Loss = MSE + λ_phys · ||dT/dt + k(T - T_amb)||^2, enforcing thermodynamic rate-of-change limits.",
-        "False Alarm Reduction: Slashes Out stream FPR from 20.28% down to 12.52% (a 38.3% relative reduction in false positives).",
-        "Overcoming Adaptation Lag: Converts baseline LSTM's -14.0 min lag on out_drift_009 into +18.0 min early warning (+32 min net operational gain!).",
-        "Fault Categorization: Classifies unphysical spikes as SENSOR_ARTIFACT vs genuine thermal excursion."
-    ]
-    for b in p2_bullets:
-        bp = tf_p2.add_paragraph()
-        bp.text = f"• {b}"
-        bp.font.size = Pt(11)
-        bp.font.color.rgb = COLOR_DARK
-        bp.space_after = Pt(8)
-
-    banner_p2 = slide9.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.8), Inches(6.0), Inches(11.733), Inches(0.9))
+    banner_p2 = slide9.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.8), Inches(6.05), Inches(11.733), Inches(0.85))
     banner_p2.fill.solid()
     banner_p2.fill.fore_color.rgb = RGBColor(240, 253, 244)
     banner_p2.line.color.rgb = COLOR_GREEN
     btf = banner_p2.text_frame
     bp = btf.paragraphs[0]
     bp.text = "Key Physics Gain: Incorporating Newton cooling converted a 14-minute deep learning lag into an 18-minute early warning (+32 min gain) and slashed false alarms by 38.3%!"
-    bp.font.size = Pt(12)
+    bp.font.size = Pt(11.5)
     bp.font.bold = True
     bp.font.color.rgb = COLOR_GREEN
     bp.alignment = PP_ALIGN.CENTER
 
     set_speaker_notes(slide9, (
-        "To address these shortcomings, our first breakthrough was the Variational LSTM-AE, which runs 15 Monte Carlo dropout "
+        "To address baseline shortcomings, our first breakthrough was the Variational LSTM-AE, which runs 15 Monte Carlo dropout "
         "passes to quantify epistemic uncertainty, separating genuine structural faults from random sensor noise. Our second breakthrough "
         "was the Physics-Informed LSTM-AE. By penalizing violations of Newton's Law of Cooling directly in the loss function, we slashed "
         "the ambient false positive rate from 20.28% down to 12.52%. Crucially, the physics regularizer eliminated the LSTM's adaptation lag, "
@@ -730,7 +708,7 @@ def create_deck():
         "Proposal P3: Temporal Fusion Transformer Quantile Forecaster with +189 min Warning Runway"
     )
 
-    card_tft = slide10.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.4), Inches(6.0), Inches(5.5))
+    card_tft = slide10.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.35), Inches(5.7), Inches(5.55))
     card_tft.fill.solid()
     card_tft.fill.fore_color.rgb = COLOR_LIGHT_BG
     card_tft.line.color.rgb = COLOR_BORDER
@@ -738,49 +716,29 @@ def create_deck():
     tf_tft.word_wrap = True
     p = tf_tft.paragraphs[0]
     p.text = "Proactive Excursion Prevention via Quantile Forecasting"
-    p.font.size = Pt(15)
+    p.font.size = Pt(14)
     p.font.bold = True
     p.font.color.rgb = COLOR_NAVY
-    p.space_after = Pt(10)
+    p.space_after = Pt(8)
 
     tft_bullets = [
-        "Temporal Fusion Transformer (TFT): Multi-horizon autoregressive forecaster predicting future trajectories across 30, 60, and 120-minute horizons.",
-        "Quantile Loss (Pinball Loss): Simultaneously outputs 10th, 50th (median), and 90th percentiles, providing upper-bound worst-case thermal risk profiles.",
+        "Temporal Fusion Transformer (TFT): Autoregressive forecaster predicting future trajectories across 30, 60, and 120-minute horizons.",
+        "Quantile Loss (Pinball Loss): Simultaneously outputs 10th, 50th (median), and 90th percentiles, establishing a conservative upper-bound thermal risk frontier.",
         "Pre-emptive Breach Alarm: Alarms trigger when the 90th percentile forecast breaches thermal bounds within the forecast window—long before the physical cargo heats up.",
-        "Massive Lead-Time Gains:\n  • On in_drift_023: Achieves +189.0 minutes (+3.15 hours) of pre-emptive early warning!\n  • On out_drift_009: Achieves +56.0 minutes of pre-emptive early warning!"
+        "Massive Lead-Time Gains:\n  • On in_drift_023: Achieves +189.0 minutes (+3.15 hours) of pre-emptive early warning!\n  • On out_drift_009: Achieves +56.0 minutes of pre-emptive early warning!",
+        "Actionability: Gives dispatchers sufficient operational runway to reroute vehicles, service auxiliary refrigeration units, or swap towing units."
     ]
     for b in tft_bullets:
         bp = tf_tft.add_paragraph()
         bp.text = f"• {b}"
-        bp.font.size = Pt(11)
+        bp.font.size = Pt(10)
         bp.font.color.rgb = COLOR_DARK
-        bp.space_after = Pt(10)
+        bp.space_after = Pt(7)
 
-    card_impact = slide10.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.1), Inches(1.4), Inches(5.4), Inches(5.5))
-    card_impact.fill.solid()
-    card_impact.fill.fore_color.rgb = RGBColor(255, 255, 255)
-    card_impact.line.color.rgb = COLOR_BLUE
-    tf_imp = card_impact.text_frame
-    tf_imp.word_wrap = True
-    p = tf_imp.paragraphs[0]
-    p.text = "Operational Runway Comparison"
-    p.font.size = Pt(15)
-    p.font.bold = True
-    p.font.color.rgb = COLOR_BLUE
-    p.space_after = Pt(10)
-
-    imp_bullets = [
-        "Reactive Threshold Alarm: 0 minutes runway (Damage already occurring).",
-        "Classical Anomaly Detector: 11 to 64 minutes runway (Detection after drift begins).",
-        "Multi-Horizon Quantile Forecaster: 56 to 189 minutes runway (>3 hours advance warning!).",
-        "Logistics Actionability: Gives dispatchers sufficient time to reroute refrigerated vehicles, service auxiliary generators, or transfer sensitive cargo to backup reefers."
-    ]
-    for b in imp_bullets:
-        bp = tf_imp.add_paragraph()
-        bp.text = f"• {b}"
-        bp.font.size = Pt(11)
-        bp.font.color.rgb = COLOR_DARK
-        bp.space_after = Pt(10)
+    # Embed Figure: P3 Multi-Horizon Quantile Forecast Fan Chart
+    fig_tft = os.path.join(FIG_DIR, "fig_breakthrough_p3_tft_forecast.png")
+    if os.path.exists(fig_tft):
+        slide10.shapes.add_picture(fig_tft, Inches(6.8), Inches(1.35), width=Inches(5.7))
 
     set_speaker_notes(slide10, (
         "Our third breakthrough was a Temporal Fusion Transformer for multi-horizon quantile forecasting. Instead of "
@@ -798,65 +756,43 @@ def create_deck():
         "Proposals P4 (Kalman CUSUM) & P5 (Dempster-Shafer Multimodal Evidence Fusion)"
     )
 
-    card_p4 = slide11.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.4), Inches(5.7), Inches(4.4))
+    card_p4 = slide11.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.35), Inches(5.7), Inches(4.55))
     card_p4.fill.solid()
     card_p4.fill.fore_color.rgb = COLOR_LIGHT_BG
     card_p4.line.color.rgb = COLOR_BORDER
     tf_p4 = card_p4.text_frame
     tf_p4.word_wrap = True
     p = tf_p4.paragraphs[0]
-    p.text = "Proposal P4: Contamination-Guarded Kalman CUSUM"
+    p.text = "P4: Kalman Filter & P5: Evidential Fusion"
     p.font.size = Pt(14)
     p.font.bold = True
     p.font.color.rgb = COLOR_NAVY
-    p.space_after = Pt(8)
+    p.space_after = Pt(6)
 
     p4_bullets = [
-        "Mechanism: Replaces static sigma thresholds with dynamic boundaries driven by a 1D Kalman state estimator and two-sided Cumulative Sum (CUSUM) change-point detection.",
-        "Contamination Guard: Freezes Kalman state updates when anomaly probability exceeds 0.70, preventing the threshold from absorbing creeping drift.",
-        "Benchmark Impact: Slashed Out stream FPR from 45.68% down to 29.45% (a 35.5% relative reduction in false positives)."
+        "Proposal P4: Contamination-Guarded Kalman CUSUM:\n  • 1D Kalman state estimator + two-sided CUSUM change-point detector.\n  • Freezes covariance updates when P_anomaly > 0.70 (Contamination Guard).\n  • Slashed Out stream FPR from 45.68% down to 29.45% (-35.5% relative).",
+        "Proposal P5: Dempster-Shafer Evidential Fusion:\n  • Fuses Physics Residuals, Reconstruction Errors, and Uncertainty into Dirichlet belief masses.\n  • Zero False Alarm Rate: Achieved 0.00% FPR across both Out and In streams (0 false positives out of 17,051 test readings!).\n  • 100% Precision, 86.96% Recall, F1 = 0.9302, In PR-AUC = 0.9137.\n  • Retained Lead Times: +178 min (in_drift), +30 min (out_drift), +46 min (out_step)."
     ]
     for b in p4_bullets:
         bp = tf_p4.add_paragraph()
         bp.text = f"• {b}"
-        bp.font.size = Pt(11)
+        bp.font.size = Pt(10)
         bp.font.color.rgb = COLOR_DARK
-        bp.space_after = Pt(8)
+        bp.space_after = Pt(6)
 
-    card_p5 = slide11.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.8), Inches(1.4), Inches(5.7), Inches(4.4))
-    card_p5.fill.solid()
-    card_p5.fill.fore_color.rgb = COLOR_LIGHT_BG
-    card_p5.line.color.rgb = COLOR_BORDER
-    tf_p5 = card_p5.text_frame
-    tf_p5.word_wrap = True
-    p = tf_p5.paragraphs[0]
-    p.text = "Proposal P5: Dempster-Shafer Evidential Fusion"
-    p.font.size = Pt(14)
-    p.font.bold = True
-    p.font.color.rgb = COLOR_NAVY
-    p.space_after = Pt(8)
+    # Embed Figure: P5 Evidential Multimodal Fusion
+    fig_p5 = os.path.join(FIG_DIR, "fig_breakthrough_p5_evidential_fusion.png")
+    if os.path.exists(fig_p5):
+        slide11.shapes.add_picture(fig_p5, Inches(6.8), Inches(1.35), width=Inches(5.7))
 
-    p5_bullets = [
-        "Multimodal Input: Fuses Physics Residuals, Temporal Reconstruction Error, and Epistemic Uncertainty into Dirichlet belief masses (Belief_normal, Belief_anomaly, Uncertainty/Vacuity).",
-        "Zero False Alarm Rate: Achieved 0.00% FPR across both Out and In streams (0 false alarms out of 13,307 test Out and 3,744 test In observations!).",
-        "Benchmark Accuracy: 100.0% Precision, 86.96% Recall, F1 = 0.9302, and In PR-AUC = 0.9137 (vs 0.3852 baseline LSTM).",
-        "Retained Lead Times: +178.0 min (in_drift_023), +30.0 min (out_drift_009), +46.0 min (out_step_001), +16.0 min (in_step_018)."
-    ]
-    for b in p5_bullets:
-        bp = tf_p5.add_paragraph()
-        bp.text = f"• {b}"
-        bp.font.size = Pt(11)
-        bp.font.color.rgb = COLOR_DARK
-        bp.space_after = Pt(8)
-
-    banner_p5 = slide11.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.8), Inches(6.0), Inches(11.733), Inches(0.9))
+    banner_p5 = slide11.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.8), Inches(6.05), Inches(11.733), Inches(0.85))
     banner_p5.fill.solid()
     banner_p5.fill.fore_color.rgb = RGBColor(240, 253, 244)
     banner_p5.line.color.rgb = COLOR_GREEN
     btf = banner_p5.text_frame
     bp = btf.paragraphs[0]
     bp.text = "The Evidential Fusion Breakthrough: 0.00% False Positive Rate, 100% Precision, F1 of 0.9302, and up to 178 minutes of early warning!"
-    bp.font.size = Pt(12)
+    bp.font.size = Pt(11.5)
     bp.font.bold = True
     bp.font.color.rgb = COLOR_GREEN
     bp.alignment = PP_ALIGN.CENTER
@@ -878,16 +814,16 @@ def create_deck():
     )
 
     rows, cols = 8, 8
-    t_shape = slide12.shapes.add_table(rows, cols, Inches(0.8), Inches(1.4), Inches(11.733), Inches(4.5))
+    t_shape = slide12.shapes.add_table(rows, cols, Inches(0.8), Inches(1.3), Inches(11.733), Inches(2.7))
     tbl = t_shape.table
-    tbl.columns[0].width = Inches(2.5)
+    tbl.columns[0].width = Inches(2.4)
     tbl.columns[1].width = Inches(1.2)
     tbl.columns[2].width = Inches(1.2)
     tbl.columns[3].width = Inches(1.2)
     tbl.columns[4].width = Inches(1.2)
     tbl.columns[5].width = Inches(1.4)
     tbl.columns[6].width = Inches(1.5)
-    tbl.columns[7].width = Inches(1.533)
+    tbl.columns[7].width = Inches(1.633)
 
     headers = ["Model Paradigm", "In FPR", "Out FPR", "Recall", "F1 Score", "In PR-AUC", "In Drift Lead", "Out Drift Lead"]
     for i, h in enumerate(headers):
@@ -896,7 +832,7 @@ def create_deck():
         cell.fill.fore_color.rgb = COLOR_NAVY
         p = cell.text_frame.paragraphs[0]
         p.text = h
-        p.font.size = Pt(10)
+        p.font.size = Pt(9.5)
         p.font.bold = True
         p.font.color.rgb = COLOR_WHITE
 
@@ -919,7 +855,7 @@ def create_deck():
                 cell.fill.fore_color.rgb = RGBColor(255, 255, 255) if r_idx % 2 != 0 else COLOR_HEADER_BG
             p = cell.text_frame.paragraphs[0]
             p.text = val
-            p.font.size = Pt(9.5)
+            p.font.size = Pt(9.0)
             if r_idx == 7:
                 p.font.bold = True
                 p.font.color.rgb = COLOR_GREEN
@@ -932,17 +868,13 @@ def create_deck():
             else:
                 p.font.color.rgb = COLOR_DARK
 
-    card_insights = slide12.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.8), Inches(6.1), Inches(11.733), Inches(0.85))
-    card_insights.fill.solid()
-    card_insights.fill.fore_color.rgb = COLOR_LIGHT_BG
-    card_insights.line.color.rgb = COLOR_BORDER
-    tf_ins = card_insights.text_frame
-    ip = tf_ins.paragraphs[0]
-    ip.text = "Key Empirical Takeaways: Evidential Fusion eradicates false alarms (0.00% FPR) while driving F1 to 0.9302 and PR-AUC to 0.9137. TFT Forecaster delivers up to 189 min (>3 hrs) of pre-emptive warning runway!"
-    ip.font.size = Pt(11)
-    ip.font.bold = True
-    ip.font.color.rgb = COLOR_NAVY
-    ip.alignment = PP_ALIGN.CENTER
+    # Embed Visual Plots side by side below table
+    fig_lead_all = os.path.join(FIG_DIR, "fig_breakthrough_leadtimes.png")
+    fig_pareto = os.path.join(FIG_DIR, "fig_breakthrough_master_tradeoff.png")
+    if os.path.exists(fig_lead_all):
+        slide12.shapes.add_picture(fig_lead_all, Inches(0.8), Inches(4.15), width=Inches(5.7))
+    if os.path.exists(fig_pareto):
+        slide12.shapes.add_picture(fig_pareto, Inches(6.8), Inches(4.15), width=Inches(5.7))
 
     set_speaker_notes(slide12, (
         "Here is our comprehensive master benchmark matrix. Moving from static thresholding to Evidential Deep Learning "
@@ -1176,3 +1108,4 @@ def create_deck():
 
 if __name__ == "__main__":
     create_deck()
+
