@@ -70,3 +70,8 @@ Thumbs.db
 .vscode/
 *.swp
 *~
+
+
+# Final Submissions
+*.zip
+*.tar.gz
