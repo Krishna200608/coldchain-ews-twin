@@ -140,7 +140,6 @@ def build_package():
         code_files = [
             "requirements.txt",
             "README.md",
-            "PRIMER.md",
             ".env",
             ".gitignore"
         ]
