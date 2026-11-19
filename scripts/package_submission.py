@@ -5,38 +5,15 @@ Student: Krishna Sikheriya
 Course: Managing Corporate Entrepreneurship (7th Semester B.Tech IT, IIITA)
 Instructor: Dr. Netranand Pathak
 
+Requirements Addressed:
+1. A well-organized and properly formatted report (PDF and Word formats).
+2. Upload the complete source code used in your project (clean, no .venv, original modular python).
+3. Submit the actual dataset used for your analysis (IOT-temp.csv + README).
+4. All images, graphs, and visualizations original and generated from data (figures/).
+5. Separate one-page Word document containing the direct link to the dataset (IIT2023139_Krishna_Sikheriya_Dataset_Link.docx).
+6. Compile the report, source code, dataset, and the Word document into a single ZIP folder.
+
 Output Archive: IIT2023139_Krishna_Sikheriya_Final_Submission.zip
-Package Structure:
-  IIT2023139_Krishna_Sikheriya_Final_Submission/
-    ├── Final_Report/
-    │   ├── IIT2023139_Krishna_Sikheriya_ColdChain_Report.pdf
-    │   ├── Final_Report.md
-    │   ├── Krishna_Sikheriya_ColdChain_Report.tex
-    │   ├── references.bib
-    │   └── figures/
-    ├── PPT/
-    │   ├── Presentation.pdf
-    │   ├── Presentation.pptx
-    │   └── Presentation.md
-    ├── Dataset/
-    │   ├── IOT-temp.csv
-    │   └── README.md
-    ├── Reviewed_Research_Papers/
-    │   ├── README.md
-    │   └── (8 full-text PDFs)
-    └── Paper_Code/
-        ├── src/
-        ├── dashboard/
-        ├── scripts/
-        ├── tests/
-        ├── models/
-        ├── Context/
-        ├── colab/
-        ├── notebooks/
-        ├── data/
-        ├── requirements.txt
-        ├── README.md
-        └── PRIMER.md
 """
 
 import os
@@ -107,53 +84,54 @@ def build_package():
         os.remove(ZIP_PATH)
 
     with zipfile.ZipFile(ZIP_PATH, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
-        # 1. Final Report
-        print("\n--- 1. Packaging Final Report ---")
+        # 0. Root-level One-Page Word Document for Immediate Visibility
+        print("\n--- 0. Packaging Root Dataset Link Word Document ---")
+        ds_dir = os.path.join(ROOT_DIR, "docs", "Dataset_Submission")
+        doc_word = os.path.join(ds_dir, "IIT2023139_Krishna_Sikheriya_Dataset_Link.docx")
+        doc_pdf = os.path.join(ds_dir, "IIT2023139_Krishna_Sikheriya_Dataset_Link.pdf")
+        
+        add_file(zf, doc_word, f"{PREFIX}/IIT2023139_Krishna_Sikheriya_Dataset_Link.docx")
+        add_file(zf, doc_pdf, f"{PREFIX}/IIT2023139_Krishna_Sikheriya_Dataset_Link.pdf")
+
+        # 1. Project Report (Both PDF and Word formats)
+        print("\n--- 1. Packaging Project Report ---")
         rep_dir = os.path.join(ROOT_DIR, "docs", "Report")
         add_file(zf, os.path.join(rep_dir, "IIT2023139_Krishna_Sikheriya_ColdChain_Report.pdf"),
-                 f"{PREFIX}/Final_Report/IIT2023139_Krishna_Sikheriya_ColdChain_Report.pdf")
+                 f"{PREFIX}/1_Project_Report/IIT2023139_Krishna_Sikheriya_ColdChain_Report.pdf")
+        add_file(zf, os.path.join(rep_dir, "IIT2023139_Krishna_Sikheriya_ColdChain_Report.docx"),
+                 f"{PREFIX}/1_Project_Report/IIT2023139_Krishna_Sikheriya_ColdChain_Report.docx")
         add_file(zf, os.path.join(rep_dir, "Final_Report.md"),
-                 f"{PREFIX}/Final_Report/Final_Report.md")
+                 f"{PREFIX}/1_Project_Report/Final_Report.md")
         add_file(zf, os.path.join(rep_dir, "Krishna_Sikheriya_ColdChain_Report.tex"),
-                 f"{PREFIX}/Final_Report/Krishna_Sikheriya_ColdChain_Report.tex")
+                 f"{PREFIX}/1_Project_Report/Krishna_Sikheriya_ColdChain_Report.tex")
         add_file(zf, os.path.join(rep_dir, "references.bib"),
-                 f"{PREFIX}/Final_Report/references.bib")
-        add_dir(zf, os.path.join(rep_dir, "figures"), f"{PREFIX}/Final_Report/figures")
+                 f"{PREFIX}/1_Project_Report/references.bib")
+        add_dir(zf, os.path.join(rep_dir, "figures"), f"{PREFIX}/1_Project_Report/figures")
 
-        # 2. PPT
-        print("\n--- 2. Packaging Presentation (PPT) ---")
-        add_file(zf, os.path.join(rep_dir, "Presentation.pdf"),
-                 f"{PREFIX}/PPT/Presentation.pdf")
-        add_file(zf, os.path.join(rep_dir, "Presentation.pptx"),
-                 f"{PREFIX}/PPT/Presentation.pptx")
-        add_file(zf, os.path.join(rep_dir, "Presentation.md"),
-                 f"{PREFIX}/PPT/Presentation.md")
-
-        # 3. Dataset
-        print("\n--- 3. Packaging Dataset ---")
-        ds_dir = os.path.join(ROOT_DIR, "docs", "Dataset_Submission")
+        # 2. Dataset
+        print("\n--- 2. Packaging Actual Dataset ---")
         add_file(zf, os.path.join(ds_dir, "IOT-temp.csv"),
-                 f"{PREFIX}/Dataset/IOT-temp.csv")
+                 f"{PREFIX}/2_Dataset/IOT-temp.csv")
         add_file(zf, os.path.join(ds_dir, "README.md"),
-                 f"{PREFIX}/Dataset/README.md")
+                 f"{PREFIX}/2_Dataset/README.md")
 
-        # 4. Reviewed Research Papers
-        print("\n--- 4. Packaging Reviewed Research Papers ---")
-        rp_dir = os.path.join(ROOT_DIR, "docs", "Research_Papers")
-        add_dir(zf, rp_dir, f"{PREFIX}/Reviewed_Research_Papers")
+        # 3. Dedicated Dataset Link Word Document Folder
+        print("\n--- 3. Packaging Dataset Link Word Document Folder ---")
+        add_file(zf, doc_word, f"{PREFIX}/3_Dataset_Link_Document/IIT2023139_Krishna_Sikheriya_Dataset_Link.docx")
+        add_file(zf, doc_pdf, f"{PREFIX}/3_Dataset_Link_Document/IIT2023139_Krishna_Sikheriya_Dataset_Link.pdf")
 
-        # 5. Paper Code (Clean, without .venv)
-        print("\n--- 5. Packaging Paper Code ---")
+        # 4. Source Code (Clean, without .venv or __pycache__)
+        print("\n--- 4. Packaging Complete Source Code ---")
         code_dirs = [
-            ("src", f"{PREFIX}/Paper_Code/src"),
-            ("dashboard", f"{PREFIX}/Paper_Code/dashboard"),
-            ("scripts", f"{PREFIX}/Paper_Code/scripts"),
-            ("tests", f"{PREFIX}/Paper_Code/tests"),
-            ("models", f"{PREFIX}/Paper_Code/models"),
-            ("Context", f"{PREFIX}/Paper_Code/Context"),
-            ("colab", f"{PREFIX}/Paper_Code/colab"),
-            ("notebooks", f"{PREFIX}/Paper_Code/notebooks"),
-            ("data", f"{PREFIX}/Paper_Code/data"),
+            ("src", f"{PREFIX}/4_Source_Code/src"),
+            ("dashboard", f"{PREFIX}/4_Source_Code/dashboard"),
+            ("scripts", f"{PREFIX}/4_Source_Code/scripts"),
+            ("tests", f"{PREFIX}/4_Source_Code/tests"),
+            ("models", f"{PREFIX}/4_Source_Code/models"),
+            ("Context", f"{PREFIX}/4_Source_Code/Context"),
+            ("colab", f"{PREFIX}/4_Source_Code/colab"),
+            ("notebooks", f"{PREFIX}/4_Source_Code/notebooks"),
+            ("data", f"{PREFIX}/4_Source_Code/data"),
         ]
         for src_sub, arc_sub in code_dirs:
             full_sub = os.path.join(ROOT_DIR, src_sub)
@@ -167,7 +145,21 @@ def build_package():
             ".gitignore"
         ]
         for cf in code_files:
-            add_file(zf, os.path.join(ROOT_DIR, cf), f"{PREFIX}/Paper_Code/{cf}")
+            add_file(zf, os.path.join(ROOT_DIR, cf), f"{PREFIX}/4_Source_Code/{cf}")
+
+        # 5. Presentation PPT
+        print("\n--- 5. Packaging Presentation (PPT & PDF) ---")
+        add_file(zf, os.path.join(rep_dir, "Presentation.pptx"),
+                 f"{PREFIX}/5_Presentation_PPT/Presentation.pptx")
+        add_file(zf, os.path.join(rep_dir, "Presentation.pdf"),
+                 f"{PREFIX}/5_Presentation_PPT/Presentation.pdf")
+        add_file(zf, os.path.join(rep_dir, "Presentation.md"),
+                 f"{PREFIX}/5_Presentation_PPT/Presentation.md")
+
+        # 6. Reviewed Research Papers
+        print("\n--- 6. Packaging Reviewed Research Papers ---")
+        rp_dir = os.path.join(ROOT_DIR, "docs", "Research_Papers")
+        add_dir(zf, rp_dir, f"{PREFIX}/6_Reviewed_Research_Papers")
 
     total_size = os.path.getsize(ZIP_PATH)
     print(f"\n=======================================================")
@@ -177,4 +169,3 @@ def build_package():
 
 if __name__ == "__main__":
     build_package()
-
