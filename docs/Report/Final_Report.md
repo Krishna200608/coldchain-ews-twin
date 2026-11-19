@@ -12,11 +12,11 @@
 
 ## Executive Summary
 
-Cold-chain logistics represents the backbone of modern global biopharmaceutical and fresh-food supply chains. Over \$35 billion in biopharmaceuticals and more than one-third of global perishable food production are lost annually due to temperature excursions during transit. Despite the catastrophic financial and public health consequences of temperature breaches, commercial temperature monitoring remains dominated by reactive, static threshold alarms (e.g., alert only if cargo exceeds 8°C for more than 10 to 15 minutes). By the time such alarms sound, cumulative thermal abuse has already induced irreversible protein denaturation or microbial spoilage.
+Thermal stability inside cold distribution corridors remains precarious. Across global biopharmaceutical and perishable food supply chains, premature temperature breaches cause over \$35 billion in lost vaccines and spoil more than one-third of fresh agricultural yield each year. Despite these catastrophic failures, commercial transport logistics still depends almost universally on reactive, static threshold alarms (e.g., signaling an alarm only if core temperature breaches 8°C for over 15 minutes). Such alarms are diagnostic autopsies. Because thermal denaturation accelerates continuously via Arrhenius kinetics, cumulative heat exposure destroys protein structures long before static alarms sound.
 
-This research project develops, implements, and empirically validates an end-to-end **Digital Twin-Based Early Warning System (EWS)** for cold chain monitoring. We embed streaming anomaly detectors—ranging from classical tree ensembles to physics-informed and evidential deep learning models—directly inside a discrete-event simulation loop powered by SimPy. 
+We bridge this operational void. This investigation builds, benchmarks, and publicly deploys an open-source **Digital Twin-Based Early Warning System (EWS)** for continuous cold-chain disruption surveillance. We embed streaming anomaly detectors—spanning unsupervised isolation trees, physics-regularized recurrent autoencoders, multi-horizon quantile transformers, and evidential fusion networks—directly inside a discrete-event simulation loop executed by SimPy.
 
-Using an empirical IoT telemetry dataset comprising 97,606 raw readings across 133 days exhibiting extreme arrival irregularity (arrival gap standard deviation of 5,446.3 s and dropouts reaching 11.57 days), we establish a controlled perturbation protocol of 30 synthetic injections (step spikes, linear drifts, and sensor flatlines) under a strict chronological 70/30 train/test split. All formal benchmark claims are evaluated strictly out-of-sample on the untouched test partition.
+Using an empirical IoT telemetry dataset comprising 97,606 raw readings across 133 days with extreme arrival irregularity (arrival gap standard deviation of 5,446.3 s and dropouts reaching 11.57 days), we establish a controlled perturbation protocol of 30 synthetic injections (step spikes, linear drifts, and sensor flatlines) under a strict chronological 70/30 train/test split. All formal benchmark claims are evaluated strictly out-of-sample on the untouched test partition.
 
 Our research yielded five foundational breakthroughs:
 1. **Classical vs. Deep Trade-off:** Classical Isolation Forest acted as an aggressive early tripwire, providing **+64.0 minutes** (ambient stream) and **+11.0 minutes** (enclosure stream) of early warning before irreversible drift breach, whereas an unregularized baseline LSTM-Autoencoder suffered a **-14.0 minute lag** due to gradual hidden-state adaptation to drift.
@@ -66,14 +66,14 @@ Addressing these realities requires an evidence-first corporate entrepreneurship
 
 Table 1 summarizes key contemporary benchmark literature (2023–2026) that contextualizes our research:
 
-### Table 1: Comprehensive Literature Review & Benchmark Matrix
+### Table 1: Comparative Literature Review & Benchmark Matrix
 | Study | Venue & Year | Core Focus & Methodology | Key Findings | Limitations & Relevance to Topic 21 |
 |---|---|---|---|---|
 | **Vukšić et al.** | *Applied Sciences*, 2026 | Hybrid digital twin + autoencoder for maritime reefer containers | Reports median lead time of ~68 minutes before thermal breach; models refrigeration thermodynamics | Validates deep learning for reefer early warning; provides independent external benchmark corroborating our ~64 min drift lead time. |
 | **Xie et al.** | *PLOS ONE*, 2025 | Improved Isolation Forest with subsampling and feature grouping for cold chain fleet streams | Mitigates data stream drift; evaluates point-wise anomaly detection under streaming conditions | Focuses on point-wise metrics rather than operational lead times; serves as primary classical tree benchmark. |
 | **Meng et al.** | *J. Food Engineering*, 2024 | Box-level digital twin thermal model with static over-temperature alarms | Evaluates thermal inertia of insulated packaging and phase-change materials | Exemplifies the static threshold alarm paradigm that our proactive system benchmarks against. |
 | **Wu et al.** | *J. Ind. Inf. Integration*, 2023 | Internet-of-Everything (IoE) and Digital Twin service platform for cold chain logistics | Architectures multi-tier physical-to-virtual data synchronization across fleet operations | Establishes the architectural precedent for embedding AI inference inside operational digital twin pipelines. |
-| **Defraeye et al.** | *Comput. Electron. Agric.*, 2023 | Comprehensive review of food cold chain digital twins and sensor dynamics | Analyzes physics-based vs data-driven models; identifies the post-hoc gap in current systems | Explicitly calls for shifting from reactive post-hoc loss calculation to live event-driven early warning. |
+| **Defraeye et al.** | *Comput. Electron. Agric.*, 2023 | Systematic review of food cold chain digital twins and sensor dynamics | Analyzes physics-based vs data-driven models; identifies the post-hoc gap in current systems | Explicitly calls for shifting from reactive post-hoc loss calculation to live event-driven early warning. |
 | **Sensoy et al.** | *NeurIPS*, 2018 | Evidential Deep Learning (EDL) to quantify classification uncertainty | Places Dirichlet priors over class probabilities; computes belief masses and vacuity | Theoretical foundation for our Dempster-Shafer multimodal evidence fusion module (P5). |
 | **Raissi et al.** | *J. Comput. Phys.*, 2019 | Physics-Informed Neural Networks (PINNs) | Embeds differential equations directly into loss functions to enforce physical constraints | Foundation for our PILSTM-AE (P2), embedding Newton cooling laws into autoencoder training. |
 | **Lim et al.** | *Int. J. Forecasting*, 2021 | Temporal Fusion Transformers (TFT) | Multi-horizon quantile forecasting with self-attention and interpretable variable selection | Foundation for our P3 multi-horizon quantile forecaster. |
@@ -403,7 +403,7 @@ An alarm is raised if and only if $b_{\text{anomaly}} > 0.60$ and vacuity $u < 0
 
 ## 9. Master Empirical Benchmark Matrix & Comparative Analysis
 
-Table 3 provides the comprehensive, single-source-of-truth performance benchmark comparing all seven paradigms across point-wise classification metrics and operational early-warning lead times:
+Table 3 provides the consolidated, single-source-of-truth performance benchmark comparing all seven paradigms across point-wise classification metrics and operational early-warning lead times:
 
 ### Table 3: Master Performance Benchmark Across All Detection Paradigms
 | Model Paradigm | In FPR (%) | Out FPR (%) | Precision | Recall (%) | F1 Score | In PR-AUC | `in_drift_023` Lead Time | `out_drift_009` Lead Time |
